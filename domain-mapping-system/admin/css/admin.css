@@ -1,0 +1,7 @@
+/* Domain Mapping System admin styles */
+.wrap h1 { font-size: 23px; margin-bottom: 20px; }
+#dm-mappings-table thead th { font-weight: 600; }
+#dm-mappings-table tbody td { vertical-align: middle; padding: 8px; }
+#dm-add-mapping-form { margin-top: 20px; }
+#dm-add-mapping-form .form-table th { width: 160px; padding-top: 10px; }
+#dm-add-status { font-weight: bold; }
