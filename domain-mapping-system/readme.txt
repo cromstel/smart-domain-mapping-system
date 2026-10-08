@@ -1,4 +1,4 @@
-=== Domain Mapping System ===
+=== Smart Domain Mapping System ===
 Contributors: CITGROUP
 Tags: multisite, domain mapping, ssl, dns
 Requires at least: 6.4

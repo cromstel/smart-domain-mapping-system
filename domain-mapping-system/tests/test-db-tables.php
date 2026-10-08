@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPUnit test for Domain Mapping System DB tables (network-wide base prefix).
+ * PHPUnit test for Smart Domain Mapping System DB tables (network-wide base prefix).
  */
 class DMS_Test_DB_Tables extends WP_UnitTestCase {
 

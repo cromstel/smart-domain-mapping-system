@@ -1,4 +1,4 @@
-# Security & Anti-Pattern Audit — Domain Mapping System
+# Security & Anti-Pattern Audit — Smart Domain Mapping System
 
 Target: WordPress 6.4+ / PHP 8.1+, mappings in `wp_sitemeta` (Mercator style).
 

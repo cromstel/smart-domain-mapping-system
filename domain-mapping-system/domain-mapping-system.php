@@ -1,6 +1,6 @@
 <?php
 /**
- * Domain Mapping System
+ * Smart Domain Mapping System
  *
  * Multisite custom domain mapping stored in wp_sitemeta (Mercator-style),
  * with DNS verification, SSL lifecycle tracking and audit logging.
@@ -12,7 +12,7 @@
  */
 
 /**
- * Plugin Name:       Domain Mapping System
+ * Plugin Name:       Smart Domain Mapping System
  * Description:       Multisite custom domain mapping using wp_sitemeta with DNS verification, SSL lifecycle tracking, and audit logging.
  * Version:           1.0.0
  * Requires at least: 6.4
