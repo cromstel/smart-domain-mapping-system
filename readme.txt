@@ -4,7 +4,7 @@ Tags: multisite, domain mapping, ssl, dns
 Requires at least: 6.4
 Requires PHP: 8.1
 Tested up to: 6.6
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -75,6 +75,10 @@ PHPUnit suite (MySQL), `php -l` on PHP 8.1-8.3, `node --check`, CodeQL and a
 secret scan on every push.
 
 == Changelog ==
+= 1.1.1 =
+
+* Restructure: plugin source moved to repo root; `includes/` split by feature; new class-map autoloader; docs/community files relocated; build script uses tracked-file packaging.
+
 = 1.1.0 =
 * Feature: configurable audit-log retention (default 180 days), pruned by the daily health check; `0` keeps entries forever.
 * Accessibility: table captions and column `scope` attributes, and a polite live region for status messages.
