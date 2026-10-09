@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze (PHP)
+    name: Analyze (JavaScript + Actions)
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -25,7 +25,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: php
+          # CodeQL has no PHP extractor, so scan the language surfaces it does
+          # support here: the admin JavaScript and the GitHub Actions workflows.
+          # PHP is covered by PHP_CodeSniffer + PHPCompatibility in ci.yml.
+          languages: javascript-typescript,actions
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
