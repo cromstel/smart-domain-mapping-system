@@ -1,0 +1,52 @@
+{
+    "name": "citgroup/smart-domain-mapping-system",
+    "description": "Multisite custom domain mapping for WordPress using wp_sitemeta, with DNS verification, SSL lifecycle tracking and audit logging.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/cromstel/smart-domain-mapping-system",
+    "authors": [
+        {
+            "name": "CITGROUP",
+            "homepage": "https://cromstelit.com"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "multisite",
+        "domain-mapping",
+        "ssl"
+    ],
+    "support": {
+        "issues": "https://github.com/cromstel/smart-domain-mapping-system/issues",
+        "security": "https://github.com/cromstel/smart-domain-mapping-system/security/policy"
+    },
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "phpunit/phpunit": "^9.6",
+        "wp-coding-standards/wpcs": "^3.0",
+        "yoast/phpunit-polyfills": "^2.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true,
+        "platform": {
+            "php": "8.1.99"
+        }
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "test": "phpunit -c smart-domain-mapping-system/phpunit.xml.dist"
+    },
+    "scripts-descriptions": {
+        "lint": "Run PHP_CodeSniffer (WordPress + PHPCompatibility rulesets).",
+        "lint:fix": "Auto-fix PHP_CodeSniffer violations where possible.",
+        "test": "Run the PHPUnit suite against the WordPress test library."
+    }
+}

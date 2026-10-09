@@ -34,6 +34,24 @@ final class DMS_Settings {
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'dm_nonce_action' ),
+				'i18n'    => array(
+					'required'         => esc_html__( 'Domain and Blog ID are required.', 'domain-mapping-system' ),
+					'adding'           => esc_html__( 'Adding mapping…', 'domain-mapping-system' ),
+					'failedAdd'        => esc_html__( 'Failed to add mapping.', 'domain-mapping-system' ),
+					'confirmDelete'    => esc_html__( 'Delete this mapping?', 'domain-mapping-system' ),
+					'failedDelete'     => esc_html__( 'Failed to delete mapping.', 'domain-mapping-system' ),
+					'failedUpdate'     => esc_html__( 'Failed to update mapping.', 'domain-mapping-system' ),
+					'confirmPrimary'   => esc_html__( "Set this domain as the site's primary domain? The site address (wp_blogs.domain) will be updated.", 'domain-mapping-system' ),
+					'failedPrimary'    => esc_html__( 'Failed to set primary domain.', 'domain-mapping-system' ),
+					'couldNotStart'    => esc_html__( 'Could not start verification.', 'domain-mapping-system' ),
+					// translators: %1$s: challenge URL, %2$s: challenge token.
+					'httpInstructions' => __( "Publish this challenge on the mapped domain:\n\nURL: %1\$s\nContent: %2\$s\n\nThen click Verify again to check it.", 'domain-mapping-system' ),
+					// translators: %1$s: DNS record name, %2$s: DNS record value.
+					'dnsInstructions'  => __( "Create a DNS TXT record:\n\nName: %1\$s\nValue: %2\$s\n\nThen click Verify again to check it.", 'domain-mapping-system' ),
+					'confirmCheck'     => esc_html__( 'Check the published challenge now?', 'domain-mapping-system' ),
+					'failedVerify'     => esc_html__( 'Verification failed.', 'domain-mapping-system' ),
+					'verified'         => esc_html__( 'Domain verified.', 'domain-mapping-system' ),
+				),
 			)
 		);
 	}
@@ -44,9 +62,10 @@ final class DMS_Settings {
 			'dm_options',
 			array(
 				'sanitize_callback' => array( $this, 'sanitize_options' ),
-				'default' => array(
-					'default_redirect' => '301',
-					'ssl_provider'     => 'none',
+				'default'           => array(
+					'default_redirect'     => '301',
+					'ssl_provider'         => 'none',
+					'audit_retention_days' => '180',
 				),
 			)
 		);
@@ -64,7 +83,13 @@ final class DMS_Settings {
 			array( $this, 'field_select' ),
 			'dm_settings_page',
 			'dm_main',
-			array( 'option' => 'default_redirect', 'choices' => array( '301' => '301', '302' => '302' ) )
+			array(
+				'option'  => 'default_redirect',
+				'choices' => array(
+					'301' => '301',
+					'302' => '302',
+				),
+			)
 		);
 
 		add_settings_field(
@@ -73,7 +98,27 @@ final class DMS_Settings {
 			array( $this, 'field_select' ),
 			'dm_settings_page',
 			'dm_main',
-			array( 'option' => 'ssl_provider', 'choices' => array( 'none' => 'None', 'acme' => 'ACME / Let\'s Encrypt' ) )
+			array(
+				'option'  => 'ssl_provider',
+				'choices' => array(
+					'none' => 'None',
+					'acme' => 'ACME / Let\'s Encrypt',
+				),
+			)
+		);
+
+		add_settings_field(
+			'dm_audit_retention_days',
+			esc_html__( 'Audit Log Retention (days)', 'domain-mapping-system' ),
+			array( $this, 'field_number' ),
+			'dm_settings_page',
+			'dm_main',
+			array(
+				'option'  => 'audit_retention_days',
+				'default' => 180,
+				'min'     => 0,
+				'max'     => 3650,
+			)
 		);
 	}
 
@@ -81,9 +126,14 @@ final class DMS_Settings {
 		if ( ! is_array( $input ) ) {
 			return array();
 		}
-		$clean = array();
+		$clean                     = array();
 		$clean['default_redirect'] = isset( $input['default_redirect'] ) && ( '301' === $input['default_redirect'] || '302' === $input['default_redirect'] ) ? sanitize_key( $input['default_redirect'] ) : '301';
 		$clean['ssl_provider']     = isset( $input['ssl_provider'] ) && in_array( $input['ssl_provider'], array( 'none', 'acme' ), true ) ? sanitize_key( $input['ssl_provider'] ) : 'none';
+
+		$retention                     = isset( $input['audit_retention_days'] ) ? absint( $input['audit_retention_days'] ) : 180;
+		$retention                     = min( $retention, 3650 );
+		$clean['audit_retention_days'] = (string) $retention;
+
 		return $clean;
 	}
 
@@ -102,6 +152,24 @@ final class DMS_Settings {
 		echo '</select>';
 	}
 
+	/**
+	 * Renders a numeric settings field (used for the audit retention window).
+	 *
+	 * @param array $args Field args: option, default, min, max.
+	 */
+	public function field_number( $args ) {
+		$options = get_site_option( 'dm_options', array() );
+		$current = isset( $options[ $args['option'] ] ) ? (int) $options[ $args['option'] ] : (int) $args['default'];
+		printf(
+			'<input type="number" name="dm_options[%1$s]" id="%1$s" value="%2$d" min="%3$d" max="%4$d" class="small-text" />',
+			esc_attr( $args['option'] ),
+			(int) $current,
+			(int) $args['min'],
+			(int) $args['max']
+		);
+		echo '<p class="description">' . esc_html__( 'Audit entries older than this many days are deleted daily. Use 0 to keep them forever.', 'domain-mapping-system' ) . '</p>';
+	}
+
 	public function add_menu() {
 		add_menu_page(
 			esc_html__( 'Domain Mapping', 'domain-mapping-system' ),
@@ -118,7 +186,7 @@ final class DMS_Settings {
 			esc_html__( 'Audit Logs', 'domain-mapping-system' ),
 			'manage_network',
 			'dm_logs',
-			function() {
+			function () {
 				require_once __DIR__ . '/../admin/views/logs.php';
 				dm_render_logs_page();
 			}
@@ -129,7 +197,7 @@ final class DMS_Settings {
 			esc_html__( 'Domain Mappings', 'domain-mapping-system' ),
 			'manage_network',
 			'dm_mappings_page',
-			function() {
+			function () {
 				require_once __DIR__ . '/../admin/views/network-mappings.php';
 				dm_render_mappings_page();
 			}
@@ -164,7 +232,7 @@ final class DMS_Settings {
 				esc_html( $result->get_error_message() ),
 				esc_html__( 'Could not add mapping', 'domain-mapping-system' ),
 				array(
-					'response' => 400,
+					'response'  => 400,
 					'back_link' => true,
 				)
 			);

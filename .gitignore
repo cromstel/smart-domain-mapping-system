@@ -3,8 +3,16 @@
 verify-zip/
 _build/
 
+# Local dev tooling (never committed)
+/vendor/
+composer.phar
+composer-setup.php
+/node_modules/
+
 # Legacy root-level build script (superseded by bin/build-zip.ps1)
 /build-zip.ps1
 
 # Root-level documents are never committed (docs live outside the repo)
 /*.md
+# ...except the repo README.
+!/README.md

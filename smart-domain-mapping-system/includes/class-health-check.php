@@ -26,9 +26,11 @@ final class DMS_Health_Check {
 	}
 
 	/**
-	 * Runs all health checks over active mappings.
+	 * Runs all health checks over active mappings and prunes old audit rows.
 	 */
 	public function run() {
+		$this->purge_old_logs();
+
 		$mappings = DMS_Mapping_Engine::list_mappings();
 		if ( is_wp_error( $mappings ) || empty( $mappings ) ) {
 			return;
@@ -39,6 +41,44 @@ final class DMS_Health_Check {
 			}
 			$this->check_dns( $mapping );
 			$this->check_certificate( $mapping );
+		}
+	}
+
+	/**
+	 * Deletes audit entries older than the configured retention window
+	 * (dm_options.audit_retention_days; 0 keeps entries forever).
+	 */
+	private function purge_old_logs(): void {
+		$options = get_site_option( 'dm_options', array() );
+		$days    = isset( $options['audit_retention_days'] ) ? (int) $options['audit_retention_days'] : 180;
+		if ( $days < 1 ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = $wpdb->base_prefix . DMS_TABLE_LOGS;
+		// Custom table; the query is prepared and bounded by an indexed datetime column.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$deleted = $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$table} WHERE created_at < %s",
+				wp_date( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) )
+			)
+		);
+
+		if ( $deleted ) {
+			DMS_Logging::get_instance()->log(
+				0,
+				'',
+				0,
+				'audit.purged',
+				wp_json_encode(
+					array(
+						'deleted'        => (int) $deleted,
+						'retention_days' => $days,
+					)
+				)
+			);
 		}
 	}
 

@@ -93,7 +93,7 @@ final class DMS_Mapping_Engine {
 			return;
 		}
 		$uri  = wp_unslash( $_SERVER['REQUEST_URI'] );
-		$path = parse_url( $uri, PHP_URL_PATH );
+		$path = wp_parse_url( $uri, PHP_URL_PATH );
 		if ( ! is_string( $path ) ) {
 			return;
 		}
@@ -302,14 +302,14 @@ final class DMS_Mapping_Engine {
 	public static function list_mappings( array $where = array() ) {
 		global $wpdb;
 
-		$sql   = "SELECT meta_id, meta_key, meta_value FROM {$wpdb->sitemeta} WHERE site_id = %d AND meta_key LIKE %s";
+		$sql    = "SELECT meta_id, meta_key, meta_value FROM {$wpdb->sitemeta} WHERE site_id = %d AND meta_key LIKE %s";
 		$params = array(
 			get_current_network_id(),
 			$wpdb->esc_like( self::META_PREFIX ) . '%',
 		);
 
 		if ( ! empty( $where['blog_id'] ) ) {
-			$sql   .= ' AND meta_value = %s';
+			$sql     .= ' AND meta_value = %s';
 			$params[] = (string) absint( $where['blog_id'] );
 		}
 		if ( ! empty( $where['domain'] ) ) {
@@ -322,6 +322,8 @@ final class DMS_Mapping_Engine {
 		}
 		$sql .= ' ORDER BY meta_id ASC';
 
+		// $sql is assembled from fixed fragments; all values are bound via prepare().
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ) );
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'dm_query_failed', 'Mapping query failed.', array( 'status' => 500 ) );
@@ -343,9 +345,9 @@ final class DMS_Mapping_Engine {
 		}
 
 		// Batched enrichment: avoid per-row queries (no N+1).
-		$active_map    = self::fetch_active_states();
-		$verified_map  = self::fetch_verified_domains( wp_list_pluck( $mappings, 'domain' ) );
-		$blog_domains  = array();
+		$active_map   = self::fetch_active_states();
+		$verified_map = self::fetch_verified_domains( wp_list_pluck( $mappings, 'domain' ) );
+		$blog_domains = array();
 		foreach ( array_unique( wp_list_pluck( $mappings, 'blog_id' ) ) as $blog_id ) {
 			$site = get_site( $blog_id );
 			if ( $site ) {
@@ -515,8 +517,8 @@ final class DMS_Mapping_Engine {
 			return self::get_mapping( $mapping_id );
 		}
 
-		$network_id       = get_current_network_id();
-		$stored_original  = get_site_meta( $network_id, self::ORIGINAL_PREFIX . $blog_id, true );
+		$network_id      = get_current_network_id();
+		$stored_original = get_site_meta( $network_id, self::ORIGINAL_PREFIX . $blog_id, true );
 
 		// Savepoints nest safely inside any outer transaction (e.g. the
 		// PHPUnit test suite's), unlike START TRANSACTION which would
@@ -763,7 +765,7 @@ final class DMS_Mapping_Engine {
 				$wpdb->esc_like( self::ACTIVE_PREFIX ) . '%'
 			)
 		);
-		$map = array();
+		$map  = array();
 		foreach ( (array) $rows as $row ) {
 			$map[ substr( $row->meta_key, strlen( self::ACTIVE_PREFIX ) ) ] = '1' === (string) $row->meta_value;
 		}
@@ -778,7 +780,7 @@ final class DMS_Mapping_Engine {
 	 */
 	private static function fetch_verified_domains( array $domains ) {
 		global $wpdb;
-		$map = array();
+		$map     = array();
 		$domains = array_values( array_unique( array_filter( $domains ) ) );
 		if ( empty( $domains ) ) {
 			return $map;
@@ -786,7 +788,9 @@ final class DMS_Mapping_Engine {
 		$table = $wpdb->base_prefix . DMS_TABLE_VERIFICATIONS;
 		$in    = implode( ',', array_fill( 0, count( $domains ), '%s' ) );
 		$sql   = "SELECT DISTINCT domain FROM {$table} WHERE status = 'verified' AND domain IN ( {$in} )";
-		$rows  = $wpdb->get_results( $wpdb->prepare( $sql, ...$domains ) );
+		// $sql is assembled from fixed fragments; every domain is bound via prepare().
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$domains ) );
 		foreach ( (array) $rows as $row ) {
 			$map[ $row->domain ] = true;
 		}

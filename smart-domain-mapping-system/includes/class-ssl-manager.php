@@ -19,25 +19,39 @@ final class DMS_SSL_Manager {
 		$wpdb->insert(
 			$table,
 			array(
-				'blog_id'     => absint( $blog_id ),
-				'domain'      => sanitize_text_field( $domain ),
-				'provider'    => sanitize_key( $provider ),
-				'status'      => sanitize_key( $status ),
-				'issued_at'   => current_time( 'mysql' ),
-				'expires_at'  => $expires_at ? sanitize_text_field( $expires_at ) : null,
+				'blog_id'    => absint( $blog_id ),
+				'domain'     => sanitize_text_field( $domain ),
+				'provider'   => sanitize_key( $provider ),
+				'status'     => sanitize_key( $status ),
+				'issued_at'  => current_time( 'mysql' ),
+				'expires_at' => $expires_at ? sanitize_text_field( $expires_at ) : null,
 			),
 			array( '%d', '%s', '%s', '%s', '%s', '%s' )
 		);
-		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'certificate.recorded', wp_json_encode( array( 'provider' => $provider, 'status' => $status ) ) );
+		DMS_Logging::get_instance()->log(
+			$blog_id,
+			$domain,
+			get_current_user_id(),
+			'certificate.recorded',
+			wp_json_encode(
+				array(
+					'provider' => $provider,
+					'status'   => $status,
+				)
+			)
+		);
 	}
 
 	public function get_certificate( int $blog_id, string $domain ) {
 		global $wpdb;
 		$table = $wpdb->base_prefix . DMS_TABLE_SSL;
-		$row = $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$table} WHERE blog_id = %d AND domain = %s ORDER BY issued_at DESC LIMIT 1",
-			absint( $blog_id ), sanitize_text_field( $domain )
-		) );
+		$row   = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE blog_id = %d AND domain = %s ORDER BY issued_at DESC LIMIT 1",
+				absint( $blog_id ),
+				sanitize_text_field( $domain )
+			)
+		);
 		return $row ? $row : false;
 	}
 

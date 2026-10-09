@@ -1,7 +1,25 @@
 /* Smart Domain Mapping System admin styles */
 .wrap h1 { font-size: 23px; margin-bottom: 20px; }
+
 #dm-mappings-table thead th { font-weight: 600; }
 #dm-mappings-table tbody td { vertical-align: middle; padding: 8px; }
+
 #dm-add-mapping-form { margin-top: 20px; }
 #dm-add-mapping-form .form-table th { width: 160px; padding-top: 10px; }
-#dm-add-status { font-weight: bold; }
+
+/* Status regions: keep a stable line so the live region does not shift layout. */
+#dm-add-status,
+#dm-table-status {
+	display: inline-block;
+	min-height: 1.5em;
+	font-weight: bold;
+}
+
+/* Visible keyboard focus (do not rely on the browser default being suppressed). */
+#dm-add-form .button:focus-visible,
+#dm-add-form input:focus-visible,
+#dm-mappings-table .button:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+	box-shadow: none;
+}

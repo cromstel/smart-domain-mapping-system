@@ -54,15 +54,15 @@ final class DMS_DNS_Verification {
 		$inserted = $wpdb->insert(
 			$table,
 			array(
-				'blog_id'     => absint( $blog_id ),
-				'domain'      => sanitize_text_field( $domain ),
-				'method'      => $method,
-				'token_hash'  => hash_hmac( 'sha256', $token, AUTH_KEY ),
-				'status'      => 'pending',
-				'created_at'  => current_time( 'mysql' ),
-				'expires_at'  => date( 'Y-m-d H:i:s', time() + self::CHALLENGE_TTL ),
-				'attempts'    => 0,
-				'last_error'  => null,
+				'blog_id'    => absint( $blog_id ),
+				'domain'     => sanitize_text_field( $domain ),
+				'method'     => $method,
+				'token_hash' => hash_hmac( 'sha256', $token, AUTH_KEY ),
+				'status'     => 'pending',
+				'created_at' => current_time( 'mysql' ),
+				'expires_at' => wp_date( 'Y-m-d H:i:s', time() + self::CHALLENGE_TTL ),
+				'attempts'   => 0,
+				'last_error' => null,
 			),
 			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s' )
 		);
@@ -197,9 +197,9 @@ final class DMS_DNS_Verification {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout'    => 10,
+				'timeout'     => 10,
 				'redirection' => 3,
-				'sslverify'  => false,
+				'sslverify'   => false,
 			)
 		);
 		if ( is_wp_error( $response ) ) {
@@ -229,6 +229,9 @@ final class DMS_DNS_Verification {
 		if ( ! function_exists( 'dns_get_record' ) ) {
 			return 'DNS lookup functions are not available on this server.';
 		}
+		// dns_get_record() raises E_WARNING for NXDOMAIN/NODATA; a missing record
+		// is an expected outcome of verification, so suppression is intentional.
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		$records = @dns_get_record( $record, DNS_TXT );
 		if ( empty( $records ) ) {
 			return 'No TXT record found at ' . $record . '.';

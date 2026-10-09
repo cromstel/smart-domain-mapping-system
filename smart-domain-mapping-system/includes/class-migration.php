@@ -126,7 +126,7 @@ final class DMS_Migration {
 
 		$network_id = get_current_network_id();
 		foreach ( $rows as $row ) {
-			$meta = maybe_unserialize( $row->meta_value );
+			$meta    = maybe_unserialize( $row->meta_value );
 			$blog_id = 0;
 			$domain  = false;
 			$active  = true;
@@ -151,14 +151,14 @@ final class DMS_Migration {
 			if ( ! $blog_id ) {
 				// Fall back to the numeric suffix of the legacy key
 				// (mercator_<blog_id>).
-				$suffix = substr( $row->meta_key, strlen( 'mercator_' ) );
+				$suffix  = substr( $row->meta_key, strlen( 'mercator_' ) );
 				$blog_id = absint( $suffix );
 			}
 			if ( ! $blog_id || ! get_site( $blog_id ) ) {
 				continue;
 			}
 
-			$key = DMS_Mapping_Engine::META_PREFIX . $domain;
+			$key    = DMS_Mapping_Engine::META_PREFIX . $domain;
 			$exists = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT meta_value FROM {$wpdb->sitemeta} WHERE meta_key = %s AND site_id = %d",

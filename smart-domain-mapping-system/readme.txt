@@ -4,7 +4,7 @@ Tags: multisite, domain mapping, ssl, dns
 Requires at least: 6.4
 Requires PHP: 8.1
 Tested up to: 6.6
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,11 +49,38 @@ domain at the hosting/DNS layer.
 `wp dm cert issue|renew`, `wp dm audit tail`, `wp dm migrate`.
 Run `wp help dm` for details.
 
+== Privacy ==
+All plugin data stays in your own database and is never transmitted to CITGROUP
+or any third party:
+
+* Domain mappings: `wp_sitemeta` (`dm_domain_{domain}` keys).
+* Verifications, certificates and audit entries: the `dm_verifications`,
+  `dm_certificates` and `dm_audit_log` tables.
+
+Audit entries are pruned automatically according to the retention window set in
+*Network Admin > Domain Mapping* (default 180 days; `0` keeps them forever).
+
+The only outbound network requests the plugin makes are the DNS/HTTP lookups
+used to verify a domain you explicitly asked it to verify, plus any certificate
+issuance you trigger through a configured SSL provider.
+
 == Developer notes ==
 Unit tests use the standard WordPress test suite: set `WP_TESTS_DIR` (and
 run with `WP_MULTISITE=1`), then `vendor/bin/phpunit -c phpunit.xml.dist`.
-Static checks run in CI (`php -l` on PHP 8.1-8.3 plus `node --check`).
+`bin/install-wp-tests.sh` fetches the library in CI.
+
+Static checks: `composer lint` (PHP_CodeSniffer with WordPress and
+PHPCompatibility rulesets) and `php -l`. CI runs the coding standards, the
+PHPUnit suite (MySQL), `php -l` on PHP 8.1-8.3, `node --check`, CodeQL and a
+secret scan on every push.
 
 == Changelog ==
+= 1.1.0 =
+* Feature: configurable audit-log retention (default 180 days), pruned by the daily health check; `0` keeps entries forever.
+* Accessibility: table captions and column `scope` attributes, and a polite live region for status messages.
+* Developer: all admin JavaScript strings are now translatable (passed to the script as `dmAdmin.i18n`).
+* Developer: PHP_CodeSniffer (WordPress + PHPCompatibility) and the PHPUnit suite now run in CI, alongside CodeQL and secret scanning.
+* Packaging: ships the full GPL-2.0 license text and a generated `.pot` translation template.
+
 = 1.0.0 =
 * Initial release. Core mapping engine using wp_sitemeta, 3 custom tables for verifications, SSL, and logs, REST API (domain-mapping/v1), WP-CLI `dm` commands, Network Admin UI, audit logging, migrations and uninstall cleanup.

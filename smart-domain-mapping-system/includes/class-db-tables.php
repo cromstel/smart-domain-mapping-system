@@ -11,8 +11,8 @@ class DMS_DB_Tables {
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$verifications_table = $wpdb->base_prefix . DMS_TABLE_VERIFICATIONS;
-		$ssl_table = $wpdb->base_prefix . DMS_TABLE_SSL;
-		$logs_table = $wpdb->base_prefix . DMS_TABLE_LOGS;
+		$ssl_table           = $wpdb->base_prefix . DMS_TABLE_SSL;
+		$logs_table          = $wpdb->base_prefix . DMS_TABLE_LOGS;
 
 		$sql = "CREATE TABLE $verifications_table (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

@@ -18,12 +18,12 @@ final class DMS_Logging {
 		$wpdb->insert(
 			$wpdb->base_prefix . DMS_TABLE_LOGS,
 			array(
-				'blog_id'     => $blog_id ? absint( $blog_id ) : null,
-				'domain'      => sanitize_text_field( $domain ),
-				'user_id'     => absint( $user_id ),
-				'action'      => sanitize_text_field( $action ),
-				'context'     => sanitize_textarea_field( $context ),
-				'created_at'  => current_time( 'mysql' ),
+				'blog_id'    => $blog_id ? absint( $blog_id ) : null,
+				'domain'     => sanitize_text_field( $domain ),
+				'user_id'    => absint( $user_id ),
+				'action'     => sanitize_text_field( $action ),
+				'context'    => sanitize_textarea_field( $context ),
+				'created_at' => current_time( 'mysql' ),
 			),
 			array( '%d', '%s', '%d', '%s', '%s', '%s' )
 		);

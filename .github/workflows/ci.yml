@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint (PHP ${{ matrix.php }})
@@ -24,12 +27,77 @@ jobs:
       - name: PHP syntax check
         run: |
           set -e
-          find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+          find . -name '*.php' -not -path './vendor/*' -not -path './_build/*' -print0 | xargs -0 -n1 php -l
 
       - name: JavaScript syntax check
         run: node --check smart-domain-mapping-system/admin/js/admin.js
 
-  # Full PHPUnit runs require the WordPress test suite
-  # (WP_TESTS_DIR + WP_MULTISITE=1, see tests/bootstrap.php) and are run in
-  # an environment with the test library installed:
-  #   WP_TESTS_DIR=/path/to/wordpress-develop/tests/phpunit vendor/bin/phpunit -c phpunit.xml.dist
+  phpcs:
+    name: Coding standards (PHP_CodeSniffer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run WordPress + PHPCompatibility sniffs
+        run: vendor/bin/phpcs --standard=.phpcs.xml.dist
+
+  phpunit:
+    name: PHPUnit (WordPress multisite)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h127.0.0.1 -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install WordPress test library
+        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:3306 6.6 true
+
+      - name: Run the test suite
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+          WP_MULTISITE: '1'
+        run: vendor/bin/phpunit -c smart-domain-mapping-system/phpunit.xml.dist
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

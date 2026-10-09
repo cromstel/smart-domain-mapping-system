@@ -16,9 +16,13 @@ function dm_render_logs_page() {
 	<div class="wrap">
 		<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 		<table class="widefat fixed">
-			<thead><tr><th><?php echo esc_html__( 'Blog', 'domain-mapping-system' ); ?></th><th><?php echo esc_html__( 'Domain', 'domain-mapping-system' ); ?></th><th><?php echo esc_html__( 'User', 'domain-mapping-system' ); ?></th><th><?php echo esc_html__( 'Action', 'domain-mapping-system' ); ?></th><th><?php echo esc_html__( 'Details', 'domain-mapping-system' ); ?></th><th><?php echo esc_html__( 'Time', 'domain-mapping-system' ); ?></th></tr></thead>
+			<caption class="screen-reader-text"><?php echo esc_html__( 'Audit log entries', 'domain-mapping-system' ); ?></caption>
+			<thead><tr><th scope="col"><?php echo esc_html__( 'Blog', 'domain-mapping-system' ); ?></th><th scope="col"><?php echo esc_html__( 'Domain', 'domain-mapping-system' ); ?></th><th scope="col"><?php echo esc_html__( 'User', 'domain-mapping-system' ); ?></th><th scope="col"><?php echo esc_html__( 'Action', 'domain-mapping-system' ); ?></th><th scope="col"><?php echo esc_html__( 'Details', 'domain-mapping-system' ); ?></th><th scope="col"><?php echo esc_html__( 'Time', 'domain-mapping-system' ); ?></th></tr></thead>
 			<tbody>
-			<?php if ( ! empty( $rows ) ) : foreach ( $rows as $r ) : ?>
+			<?php
+			if ( ! empty( $rows ) ) :
+				foreach ( $rows as $r ) :
+					?>
 			<tr>
 				<td><?php echo absint( $r->blog_id ); ?></td>
 				<td><?php echo esc_html( $r->domain ); ?></td>
@@ -27,7 +31,7 @@ function dm_render_logs_page() {
 				<td><?php echo esc_html( $r->context ); ?></td>
 				<td><?php echo esc_html( $r->created_at ); ?></td>
 			</tr>
-			<?php endforeach; else : ?>
+							<?php endforeach; else : ?>
 			<tr><td colspan="6"><?php esc_html_e( 'No log entries found.', 'domain-mapping-system' ); ?></td></tr>
 			<?php endif; ?>
 			</tbody>

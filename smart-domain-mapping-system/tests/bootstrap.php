@@ -19,6 +19,23 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 	exit( 1 );
 }
 
+// The WP core test bootstrap requires the Yoast PHPUnit Polyfills. The test
+// suite is extracted into $_tests_dir without its own vendor/, so point core at
+// the copy installed by Composer (constant = absolute path to the library root).
+if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	$dm_polyfill_dirs = array(
+		dirname( __DIR__ ) . '/vendor/yoast/phpunit-polyfills',          // Composer run from the plugin dir.
+		dirname( __DIR__, 2 ) . '/vendor/yoast/phpunit-polyfills',       // Composer run from the repo root.
+	);
+	foreach ( $dm_polyfill_dirs as $dm_polyfill_dir ) {
+		if ( file_exists( $dm_polyfill_dir . '/phpunitpolyfills-autoload.php' ) ) {
+			define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', $dm_polyfill_dir );
+			break;
+		}
+	}
+	unset( $dm_polyfill_dirs, $dm_polyfill_dir );
+}
+
 require_once $_tests_dir . '/includes/functions.php';
 
 /**

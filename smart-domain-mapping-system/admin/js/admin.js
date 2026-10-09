@@ -1,6 +1,20 @@
 (function($) {
 	'use strict';
 
+	// All user-facing strings are provided (translated) by PHP via wp_localize_script.
+	function t(key, fallback) {
+		var strings = (window.dmAdmin && dmAdmin.i18n) ? dmAdmin.i18n : {};
+		return strings[key] || fallback;
+	}
+
+	// Replaces %1$s / %2$s (or bare %s) placeholders in order.
+	function fmt(template) {
+		var args = Array.prototype.slice.call(arguments, 1);
+		return String(template).replace(/%(\d+\$)?s/g, function() {
+			return args.length ? args.shift() : '';
+		});
+	}
+
 	function nonce() {
 		return (window.dmAdmin && dmAdmin.nonce) ? dmAdmin.nonce : '';
 	}
@@ -41,10 +55,10 @@
 			var domain = $.trim($('#dm-domain').val());
 			var blogId = $.trim($('#dm-blog-id').val());
 			if (!domain || !blogId) {
-				flash($status, 'Domain and Blog ID are required.', false);
+				flash($status, t('required', 'Domain and Blog ID are required.'), false);
 				return;
 			}
-			flash($status, 'Adding mapping…', true);
+			flash($status, t('adding', 'Adding mapping…'), true);
 			post({
 				action: 'dm_rest_create_mapping',
 				domain: domain,
@@ -55,14 +69,14 @@
 					window.location.reload();
 				})
 				.fail(function(xhr) {
-					flash($status, failMessage(xhr, 'Failed to add mapping.'), false);
+					flash($status, failMessage(xhr, t('failedAdd', 'Failed to add mapping.')), false);
 				});
 		});
 
 		// Delete mapping.
 		$('#dm-mappings-table').on('click', '.dm-delete-mapping', function(e) {
 			e.preventDefault();
-			if (!window.confirm('Delete this mapping?')) {
+			if (!window.confirm(t('confirmDelete', 'Delete this mapping?'))) {
 				return;
 			}
 			post({
@@ -73,7 +87,7 @@
 					window.location.reload();
 				})
 				.fail(function(xhr) {
-					alert(failMessage(xhr, 'Failed to delete mapping.'));
+					alert(failMessage(xhr, t('failedDelete', 'Failed to delete mapping.')));
 				});
 		});
 
@@ -89,14 +103,14 @@
 					window.location.reload();
 				})
 				.fail(function(xhr) {
-					alert(failMessage(xhr, 'Failed to update mapping.'));
+					alert(failMessage(xhr, t('failedUpdate', 'Failed to update mapping.')));
 				});
 		});
 
 		// Set primary domain (syncs wp_blogs.domain).
 		$('#dm-mappings-table').on('click', '.dm-set-primary', function(e) {
 			e.preventDefault();
-			if (!window.confirm('Set this domain as the site\'s primary domain? The site address (wp_blogs.domain) will be updated.')) {
+			if (!window.confirm(t('confirmPrimary', "Set this domain as the site's primary domain? The site address (wp_blogs.domain) will be updated."))) {
 				return;
 			}
 			post({
@@ -107,7 +121,7 @@
 					window.location.reload();
 				})
 				.fail(function(xhr) {
-					alert(failMessage(xhr, 'Failed to set primary domain.'));
+					alert(failMessage(xhr, t('failedPrimary', 'Failed to set primary domain.')));
 				});
 		});
 
@@ -131,31 +145,33 @@
 			})
 				.done(function(resp) {
 					if (isBodyError(resp)) {
-						alert(resp.message || 'Could not start verification.');
+						alert(resp.message || t('couldNotStart', 'Could not start verification.'));
 						return;
 					}
 					$btn.data('dm-token', resp.token);
 					var message;
 					if (resp.method === 'http') {
-						message = 'Publish this challenge on the mapped domain:\n\n' +
-							'URL: ' + window.location.protocol + '//' + resp.domain + resp.challenge_path + '\n' +
-							'Content: ' + resp.token + '\n\n' +
-							'Then click Verify again to check it.';
+						message = fmt(
+							t('httpInstructions', "Publish this challenge on the mapped domain:\n\nURL: %1$s\nContent: %2$s\n\nThen click Verify again to check it."),
+							window.location.protocol + '//' + resp.domain + resp.challenge_path,
+							resp.token
+						);
 					} else {
-						message = 'Create a DNS TXT record:\n\n' +
-							'Name: ' + resp.challenge_path + '\n' +
-							'Value: ' + resp.token + '\n\n' +
-							'Then click Verify again to check it.';
+						message = fmt(
+							t('dnsInstructions', "Create a DNS TXT record:\n\nName: %1$s\nValue: %2$s\n\nThen click Verify again to check it."),
+							resp.challenge_path,
+							resp.token
+						);
 					}
 					alert(message);
 				})
 				.fail(function(xhr) {
-					alert(failMessage(xhr, 'Could not start verification.'));
+					alert(failMessage(xhr, t('couldNotStart', 'Could not start verification.')));
 				});
 		});
 
 		function completeVerification(id, token) {
-			if (!window.confirm('Check the published challenge now?')) {
+			if (!window.confirm(t('confirmCheck', 'Check the published challenge now?'))) {
 				return;
 			}
 			post({
@@ -165,14 +181,14 @@
 			})
 				.done(function(resp) {
 					if (isBodyError(resp)) {
-						alert(resp.message || 'Verification failed.');
+						alert(resp.message || t('failedVerify', 'Verification failed.'));
 						return;
 					}
-					alert('Domain verified.');
+					alert(t('verified', 'Domain verified.'));
 					window.location.reload();
 				})
 				.fail(function(xhr) {
-					alert(failMessage(xhr, 'Verification failed.'));
+					alert(failMessage(xhr, t('failedVerify', 'Verification failed.')));
 				});
 		}
 	});

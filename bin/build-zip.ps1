@@ -32,6 +32,10 @@ Copy-Item $src $stage -Recurse
 Remove-Item -Recurse -Force (Join-Path $stage '.github'), (Join-Path $stage 'tests') -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $stage 'phpunit.xml.dist'), (Join-Path $stage 'SECURITY_AUDIT.md') -ErrorAction SilentlyContinue
 
+# Drop version-control placeholders so they never reach a customer site.
+Get-ChildItem -Path $stage -Recurse -Force -Filter '.gitkeep' -ErrorAction SilentlyContinue |
+	Remove-Item -Force -ErrorAction SilentlyContinue
+
 # The ZIP root folder is the plugin slug (version lives in the file name),
 # so WordPress installs/upgrades into a stable directory.
 $zip = "$src-$Version.zip"

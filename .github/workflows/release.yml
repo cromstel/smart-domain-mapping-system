@@ -1,8 +1,8 @@
 name: Release
 
 # Pushing a version tag (v1.2.3) lints the code, builds the production ZIP
-# with the same script used locally (bin/build-zip.ps1) and attaches it to a
-# GitHub Release.
+# with the same script used locally (bin/build-zip.ps1), regenerates the
+# translation template and attaches both to a GitHub Release.
 on:
   push:
     tags:
@@ -18,11 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP
+      - name: Set up PHP and WP-CLI
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           coverage: none
+          tools: wp-cli
 
       - name: PHP syntax check
         run: |
@@ -36,8 +37,17 @@ jobs:
         shell: pwsh
         run: ./bin/build-zip.ps1
 
-      - name: Create GitHub Release with ZIP attached
+      - name: Generate translation template (.pot)
+        run: |
+          mkdir -p smart-domain-mapping-system/languages
+          wp i18n make-pot smart-domain-mapping-system smart-domain-mapping-system/languages/domain-mapping-system.pot \
+            --domain=domain-mapping-system \
+            --package-name="Smart Domain Mapping System"
+
+      - name: Create GitHub Release with ZIP and POT attached
         uses: softprops/action-gh-release@v2
         with:
-          files: smart-domain-mapping-system-*.zip
+          files: |
+            smart-domain-mapping-system-*.zip
+            smart-domain-mapping-system/languages/*.pot
           generate_release_notes: true

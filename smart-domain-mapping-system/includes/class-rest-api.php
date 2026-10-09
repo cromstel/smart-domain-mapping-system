@@ -54,11 +54,11 @@ final class DMS_REST_API {
 					'permission_callback' => array( $this, 'can_read_all' ),
 					'args'                => array(
 						'site_id' => array(
-							'required'         => false,
+							'required'          => false,
 							'sanitize_callback' => 'absint',
 						),
 						'status'  => array(
-							'required'         => false,
+							'required'          => false,
 							'sanitize_callback' => 'sanitize_key',
 						),
 					),
@@ -69,11 +69,11 @@ final class DMS_REST_API {
 					'permission_callback' => array( $this, 'can_create' ),
 					'args'                => array(
 						'site_id'      => array(
-							'required'         => false,
+							'required'          => false,
 							'sanitize_callback' => 'absint',
 						),
 						'blog_id'      => array(
-							'required'         => false,
+							'required'          => false,
 							'sanitize_callback' => 'absint',
 						),
 						'domain'       => array(
@@ -99,7 +99,10 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'get_mapping' ),
 					'permission_callback' => array( $this, 'can_access_mapping' ),
 					'args'                => array(
-						'id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+						'id' => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
 				array(
@@ -107,13 +110,16 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'update_mapping' ),
 					'permission_callback' => array( $this, 'can_access_mapping' ),
 					'args'                => array(
-						'id'            => array( 'required' => true, 'sanitize_callback' => 'absint' ),
-						'active'        => array(
-							'required'         => false,
-							'default'          => null,
+						'id'           => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'active'       => array(
+							'required'          => false,
+							'default'           => null,
 							'sanitize_callback' => array( $this, 'sanitize_active' ),
 						),
-						'make_primary'  => array(
+						'make_primary' => array(
 							'default'           => false,
 							'sanitize_callback' => 'rest_sanitize_boolean',
 						),
@@ -124,7 +130,10 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'delete_mapping' ),
 					'permission_callback' => array( $this, 'can_access_mapping' ),
 					'args'                => array(
-						'id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+						'id' => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
 			)
@@ -139,11 +148,17 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'verify_mapping' ),
 					'permission_callback' => array( $this, 'can_manage_network' ),
 					'args'                => array(
-						'id'     => array( 'required' => true, 'sanitize_callback' => 'absint' ),
-						'token'  => array( 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
+						'id'     => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'token'  => array(
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
 						'method' => array(
-							'required'         => false,
-							'default'          => 'dns',
+							'required'          => false,
+							'default'           => 'dns',
 							'sanitize_callback' => 'sanitize_key',
 						),
 					),
@@ -160,7 +175,10 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'set_primary' ),
 					'permission_callback' => array( $this, 'can_manage_network' ),
 					'args'                => array(
-						'id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+						'id' => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
 			)
@@ -175,7 +193,10 @@ final class DMS_REST_API {
 					'callback'            => array( $this, 'get_site_mappings' ),
 					'permission_callback' => array( $this, 'can_access_site' ),
 					'args'                => array(
-						'site_id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+						'site_id' => array(
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
 			)
@@ -186,11 +207,11 @@ final class DMS_REST_API {
 	 * Permission callbacks
 	 * ------------------------------------------------------------------ */
 
-	public function can_manage_network( $request = null ) {
+	public function can_manage_network() {
 		return current_user_can( 'manage_network' );
 	}
 
-	public function can_read_all( $request = null ) {
+	public function can_read_all() {
 		return current_user_can( 'manage_network' );
 	}
 
@@ -258,7 +279,7 @@ final class DMS_REST_API {
 		return false !== $normalized ? $normalized : sanitize_text_field( (string) $value );
 	}
 
-	public function validate_domain( $value, $request = null, $key = null ) {
+	public function validate_domain( $value ) {
 		return false !== DMS_Mapping_Engine::normalize_domain( $value );
 	}
 
@@ -277,9 +298,9 @@ final class DMS_REST_API {
 	 * @return WP_REST_Response
 	 */
 	public function get_mappings( $request ) {
-		$where    = array();
-		$site_id  = (int) $request->get_param( 'site_id' );
-		$status   = (string) $request->get_param( 'status' );
+		$where   = array();
+		$site_id = (int) $request->get_param( 'site_id' );
+		$status  = (string) $request->get_param( 'status' );
 		if ( $site_id ) {
 			$where['blog_id'] = $site_id;
 		}
@@ -360,9 +381,9 @@ final class DMS_REST_API {
 	 * @return WP_REST_Response
 	 */
 	public function update_mapping( $request ) {
-		$id            = (int) $request->get_param( 'id' );
-		$active        = $request->get_param( 'active' );
-		$make_primary  = rest_sanitize_boolean( $request->get_param( 'make_primary' ) );
+		$id           = (int) $request->get_param( 'id' );
+		$active       = $request->get_param( 'active' );
+		$make_primary = rest_sanitize_boolean( $request->get_param( 'make_primary' ) );
 
 		if ( $make_primary && ! current_user_can( 'manage_network' ) ) {
 			return $this->error_response(
@@ -464,6 +485,9 @@ final class DMS_REST_API {
 	 * against id = 0.
 	 * ------------------------------------------------------------------ */
 
+	// phpcs:disable WordPress.Security.NonceVerification.Missing -- every handler
+	// below calls require_ajax(), which verifies the nonce and capability before
+	// $_POST is read; PHPCS cannot follow that into the helper.
 	public function ajax_list_mappings() {
 		$this->require_ajax();
 		$this->send_json( $this->get_mappings( new WP_REST_Request( 'GET', '/mappings' ) ) );
@@ -520,6 +544,8 @@ final class DMS_REST_API {
 		$request->set_body_params( $body );
 		$this->send_json( $this->verify_mapping( $request ) );
 	}
+
+	// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 	/**
 	 * Verifies nonce + capability for admin-ajax calls.

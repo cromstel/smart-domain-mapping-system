@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<ruleset name="Smart Domain Mapping System">
+	<description>WordPress Coding Standards and PHP compatibility checks for the Smart Domain Mapping System plugin.</description>
+
+	<!-- What to scan / skip. -->
+	<file>smart-domain-mapping-system</file>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/_build/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg value="ps"/>
+
+	<!-- WordPress Coding Standards (Core + Extra: security, i18n, DB, escaping). -->
+	<rule ref="WordPress-Extra"/>
+
+	<!-- Project convention: files are named class-<feature>.php (every class is
+	     already prefixed DMS_), so "file name == class name" does not apply. -->
+	<rule ref="WordPress.Files.FileName">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Custom tables are always referenced as $wpdb->base_prefix . DMS_TABLE_*
+	     constants (never user input); row values are still bound via prepare(). -->
+	<rule ref="WordPress.DB.PreparedSQL.InterpolatedNotPrepared">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Plugin-specific i18n text domain. -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="domain-mapping-system"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Minimum supported WordPress version for deprecation checks. -->
+	<config name="minimum_supported_wp_version" value="6.4"/>
+
+	<!-- PHP compatibility: never flag newer-than-target, only removed/broken syntax. -->
+	<rule ref="PHPCompatibilityWP"/>
+	<config name="testVersion" value="8.1-"/>
+</ruleset>
