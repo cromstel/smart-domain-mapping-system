@@ -1,0 +1,7 @@
+# Build artifacts
+*.zip
+verify-zip/
+_build/
+
+# Root-level documents are never committed (docs live outside the repo)
+/*.md

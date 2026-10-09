@@ -27,7 +27,7 @@ jobs:
           find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
 
       - name: JavaScript syntax check
-        run: node --check admin/js/admin.js
+        run: node --check smart-domain-mapping-system/admin/js/admin.js
 
   # Full PHPUnit runs require the WordPress test suite
   # (WP_TESTS_DIR + WP_MULTISITE=1, see tests/bootstrap.php) and are run in

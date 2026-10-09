@@ -1,0 +1,43 @@
+name: Release
+
+# Pushing a version tag (v1.2.3) lints the code, builds the production ZIP
+# with the same script used locally (bin/build-zip.ps1) and attaches it to a
+# GitHub Release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -e
+          find . -name '*.php' -not -path './_build/*' -print0 | xargs -0 -n1 php -l
+
+      - name: JavaScript syntax check
+        run: node --check smart-domain-mapping-system/admin/js/admin.js
+
+      - name: Build production ZIP
+        shell: pwsh
+        run: ./bin/build-zip.ps1
+
+      - name: Create GitHub Release with ZIP attached
+        uses: softprops/action-gh-release@v2
+        with:
+          files: smart-domain-mapping-system-*.zip
+          generate_release_notes: true
