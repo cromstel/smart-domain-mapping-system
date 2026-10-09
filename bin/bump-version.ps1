@@ -8,9 +8,8 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     throw "Version must look like 1.2.3 (got: $Version)"
 }
 
-$src      = 'smart-domain-mapping-system'
-$plugin   = Join-Path $src 'domain-mapping-system.php'
-$readme   = Join-Path $src 'readme.txt'
+$plugin   = 'domain-mapping-system.php'
+$readme   = 'readme.txt'
 $utf8     = New-Object System.Text.UTF8Encoding($false)
 
 foreach ($file in @($plugin, $readme)) {

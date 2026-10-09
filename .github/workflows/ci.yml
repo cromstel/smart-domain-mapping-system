@@ -30,7 +30,7 @@ jobs:
           find . -name '*.php' -not -path './vendor/*' -not -path './_build/*' -print0 | xargs -0 -n1 php -l
 
       - name: JavaScript syntax check
-        run: node --check smart-domain-mapping-system/admin/js/admin.js
+        run: node --check admin/js/admin.js
 
   phpcs:
     name: Coding standards (PHP_CodeSniffer)
@@ -87,7 +87,7 @@ jobs:
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
           WP_MULTISITE: '1'
-        run: vendor/bin/phpunit -c smart-domain-mapping-system/phpunit.xml.dist
+        run: vendor/bin/phpunit -c phpunit.xml.dist
 
   secrets:
     name: Secret scan (gitleaks)

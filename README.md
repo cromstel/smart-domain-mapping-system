@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/ci.yml/badge.svg)](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/ci.yml)
 [![Release](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/release.yml/badge.svg)](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/release.yml)
-[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](smart-domain-mapping-system/LICENSE.txt)
+[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE.txt)
 
 Multisite custom domain mapping for WordPress. Mappings live in `wp_sitemeta`
 (Mercator-style), resolve through core's `wp_blogs.domain`, and are backed by DNS
@@ -30,7 +30,7 @@ intercept bootstrap. Instead:
 Verification, certificate and audit data live in three custom tables created with
 `dbDelta()`: `dm_verifications`, `dm_certificates` and `dm_audit_log`.
 
-See [`.github/docs/API.md`](.github/docs/API.md) for the full REST and WP-CLI
+See [`docs/API.md`](docs/API.md) for the full REST and WP-CLI
 contract.
 
 ## Installation
@@ -71,7 +71,7 @@ All data (mappings, verification challenges, certificates, audit entries) is
 stored **locally** in your own database. The plugin never transmits data to
 CITGROUP or any third party. Verification performs outbound HTTP/DNS lookups
 against the domain being mapped — that is the only external network request.
-See [`readme.txt`](smart-domain-mapping-system/readme.txt) for details.
+See [`readme.txt`](readme.txt) for details.
 
 ## Development
 
@@ -84,17 +84,17 @@ composer test                    # PHPUnit (requires WP_TESTS_DIR + WP_MULTISITE
 pwsh bin/build-zip.ps1           # -> smart-domain-mapping-system-<version>.zip
 ```
 
-See [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the full setup,
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full setup,
 test and release workflow.
 
 ## Security
 
-Please read [`.github/SECURITY.md`](.github/SECURITY.md) before reporting a
+Please read [`SECURITY.md`](SECURITY.md) before reporting a
 vulnerability — do **not** open a public issue for security defects.
 
 ## License
 
-GPL-2.0-or-later. See [`LICENSE.txt`](smart-domain-mapping-system/LICENSE.txt).
+GPL-2.0-or-later. See [`LICENSE.txt`](LICENSE.txt).
 
 ---
 

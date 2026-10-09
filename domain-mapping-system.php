@@ -29,26 +29,51 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'DMS_VERSION', '1.1.0' );
 define( 'DMS_PLUGIN_FILE', __FILE__ );
+define( 'DMS_PLUGIN_DIR', __DIR__ );
 
 define( 'DMS_TABLE_VERIFICATIONS', 'dm_verifications' );
 define( 'DMS_TABLE_SSL', 'dm_certificates' );
 define( 'DMS_TABLE_LOGS', 'dm_audit_log' );
 
-require_once __DIR__ . '/includes/class-db-tables.php';
-require_once __DIR__ . '/includes/class-mapping-engine.php';
-require_once __DIR__ . '/includes/class-dns-verification.php';
-require_once __DIR__ . '/includes/class-ssl-manager.php';
-require_once __DIR__ . '/includes/class-settings.php';
-require_once __DIR__ . '/includes/class-rest-api.php';
-require_once __DIR__ . '/includes/class-cli.php';
-require_once __DIR__ . '/includes/class-domain-mapping-system.php';
-require_once __DIR__ . '/includes/class-logging.php';
-require_once __DIR__ . '/includes/class-ssl-provider-interface.php';
-require_once __DIR__ . '/includes/class-ssl-provider-none.php';
-require_once __DIR__ . '/includes/class-ssl-provider-acme.php';
-require_once __DIR__ . '/includes/class-ssl-providers.php';
-require_once __DIR__ . '/includes/class-migration.php';
-require_once __DIR__ . '/includes/class-health-check.php';
+/**
+ * Autoloads the plugin's DMS_* classes from includes/.
+ *
+ * Classes are grouped by feature (core/, verification/, ssl/, admin/, rest/,
+ * cli/) in files named class-<feature>.php, so an explicit class => file map
+ * keeps loading deterministic without a filesystem scan on every request.
+ *
+ * @param string $class_name Fully-qualified class or interface name.
+ * @return void
+ */
+function dms_autoload( $class_name ) {
+	static $classes = array(
+		'DMS_DB_Tables'              => 'includes/core/class-db-tables.php',
+		'DMS_Mapping_Engine'         => 'includes/core/class-mapping-engine.php',
+		'DMS_Logging'                => 'includes/core/class-logging.php',
+		'DMS_Migration'              => 'includes/core/class-migration.php',
+		'DMS_Plugin'                 => 'includes/core/class-domain-mapping-system.php',
+		'DMS_DNS_Verification'       => 'includes/verification/class-dns-verification.php',
+		'DMS_Health_Check'           => 'includes/verification/class-health-check.php',
+		'DMS_SSL_Manager'            => 'includes/ssl/class-ssl-manager.php',
+		'DMS_SSL_Provider_Interface' => 'includes/ssl/class-ssl-provider-interface.php',
+		'DMS_SSL_Provider_None'      => 'includes/ssl/class-ssl-provider-none.php',
+		'DMS_SSL_Provider_ACME'      => 'includes/ssl/class-ssl-provider-acme.php',
+		'DMS_SSL_Providers'          => 'includes/ssl/class-ssl-providers.php',
+		'DMS_Settings'               => 'includes/admin/class-settings.php',
+		'DMS_REST_API'               => 'includes/rest/class-rest-api.php',
+	);
+
+	if ( isset( $classes[ $class_name ] ) ) {
+		require_once DMS_PLUGIN_DIR . '/' . $classes[ $class_name ];
+	}
+}
+spl_autoload_register( 'dms_autoload' );
+
+// WP-CLI self-registers its command at load time and is never referenced by
+// class name elsewhere, so it must be required eagerly. The file is a no-op
+// unless WP_CLI is defined.
+require_once __DIR__ . '/includes/cli/class-cli.php';
+
 require_once __DIR__ . '/public/redirect-helpers.php';
 
 /**

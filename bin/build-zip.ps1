@@ -4,11 +4,15 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$src = 'smart-domain-mapping-system'
-$pluginFile = Join-Path $src 'domain-mapping-system.php'
+# The plugin source lives at the repository root; the ZIP's single top-level
+# folder must be the plugin slug so WordPress installs/upgrades into a stable
+# directory.
+$root       = (Get-Location).Path
+$slug       = 'smart-domain-mapping-system'
+$pluginFile = 'domain-mapping-system.php'
 
 if (-not (Test-Path $pluginFile)) {
-    throw "Plugin main file not found: $pluginFile"
+    throw "Plugin main file not found: $pluginFile (run this script from the repository root)"
 }
 
 # Read the version from the plugin header when not passed explicitly.
@@ -21,23 +25,45 @@ if (-not $Version) {
     $Version = $match.Groups[1].Value
 }
 
-# Stage a clean copy under _build/ (dev-only files excluded below).
-if (Test-Path '_build') { Remove-Item -Recurse -Force '_build' }
-New-Item -ItemType Directory -Path '_build' -Force | Out-Null
-$stage = Join-Path '_build' $src
-Copy-Item $src $stage -Recurse
+# Ship only tracked files, so untracked local artifacts (planning docs, composer
+# scripts, editor backups) can never leak into a release. Dev-only, build-only
+# and repository-only paths are excluded on top of that.
+$excludeDirs  = @( '.github', 'assets', 'bin', 'docs', 'tests' )
+$excludeFiles = @(
+    '.gitattributes', '.gitignore', '.phpcs.xml.dist',
+    'composer.json', 'composer.lock',
+    'README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'phpunit.xml.dist'
+)
 
-# Dev-only exclusions. CI runs this same script, so local and release
-# artifacts can never drift.
-Remove-Item -Recurse -Force (Join-Path $stage '.github'), (Join-Path $stage 'tests') -ErrorAction SilentlyContinue
-Remove-Item -Force (Join-Path $stage 'phpunit.xml.dist'), (Join-Path $stage 'SECURITY_AUDIT.md') -ErrorAction SilentlyContinue
+$tracked = @(git -C $root ls-files)
+if ( $tracked.Count -eq 0 ) {
+    throw 'git ls-files returned no files - run this script from the repository root.'
+}
+
+# Stage a clean copy under _build/<slug>/.
+if ( Test-Path '_build' ) { Remove-Item -Recurse -Force '_build' }
+$stage = Join-Path '_build' $slug
+New-Item -ItemType Directory -Path $stage -Force | Out-Null
+
+foreach ( $rel in $tracked ) {
+    $rel = $rel -replace '/', '\'
+    $top = ( $rel -split '\\' )[0]
+    if ( $excludeDirs -contains $top ) { continue }
+    if ( $excludeFiles -contains $rel ) { continue }
+
+    $dest    = Join-Path $stage $rel
+    $destDir = Split-Path $dest -Parent
+    if ( -not ( Test-Path $destDir ) ) {
+        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+    }
+    Copy-Item -Path ( Join-Path $root $rel ) -Destination $dest -Force
+}
 
 # Drop version-control placeholders so they never reach a customer site.
 Get-ChildItem -Path $stage -Recurse -Force -Filter '.gitkeep' -ErrorAction SilentlyContinue |
-	Remove-Item -Force -ErrorAction SilentlyContinue
+    Remove-Item -Force -ErrorAction SilentlyContinue
 
-# The ZIP root folder is the plugin slug (version lives in the file name),
-# so WordPress installs/upgrades into a stable directory.
-$zip = "$src-$Version.zip"
+# The ZIP root folder is the plugin slug (version lives in the file name).
+$zip = "$slug-$Version.zip"
 Compress-Archive -Path $stage -DestinationPath $zip -Force
-Write-Output "Built $zip (folder: $src, version: $Version)"
+Write-Output "Built $zip (folder: $slug, version: $Version)"

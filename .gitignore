@@ -12,7 +12,9 @@ composer-setup.php
 # Legacy root-level build script (superseded by bin/build-zip.ps1)
 /build-zip.ps1
 
-# Root-level documents are never committed (docs live outside the repo)
+# Local planning documents are never committed (published docs live in docs/).
 /*.md
-# ...except the repo README.
+# ...except the conventional community files at the repository root.
 !/README.md
+!/CONTRIBUTING.md
+!/SECURITY.md

@@ -31,7 +31,7 @@ jobs:
           find . -name '*.php' -not -path './_build/*' -print0 | xargs -0 -n1 php -l
 
       - name: JavaScript syntax check
-        run: node --check smart-domain-mapping-system/admin/js/admin.js
+        run: node --check admin/js/admin.js
 
       - name: Build production ZIP
         shell: pwsh
@@ -39,8 +39,9 @@ jobs:
 
       - name: Generate translation template (.pot)
         run: |
-          mkdir -p smart-domain-mapping-system/languages
-          wp i18n make-pot smart-domain-mapping-system smart-domain-mapping-system/languages/domain-mapping-system.pot \
+          mkdir -p languages
+          wp i18n make-pot . languages/domain-mapping-system.pot \
+            --exclude=vendor,node_modules,_build,tests,bin,assets,docs,.github \
             --domain=domain-mapping-system \
             --package-name="Smart Domain Mapping System"
 
@@ -49,5 +50,5 @@ jobs:
         with:
           files: |
             smart-domain-mapping-system-*.zip
-            smart-domain-mapping-system/languages/*.pot
+            languages/*.pot
           generate_release_notes: true

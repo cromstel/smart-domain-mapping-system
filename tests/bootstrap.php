@@ -24,8 +24,7 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 // the copy installed by Composer (constant = absolute path to the library root).
 if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
 	$dm_polyfill_dirs = array(
-		dirname( __DIR__ ) . '/vendor/yoast/phpunit-polyfills',          // Composer run from the plugin dir.
-		dirname( __DIR__, 2 ) . '/vendor/yoast/phpunit-polyfills',       // Composer run from the repo root.
+		dirname( __DIR__ ) . '/vendor/yoast/phpunit-polyfills',          // Composer install at the repo root.
 	);
 	foreach ( $dm_polyfill_dirs as $dm_polyfill_dir ) {
 		if ( file_exists( $dm_polyfill_dir . '/phpunitpolyfills-autoload.php' ) ) {

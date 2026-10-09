@@ -187,7 +187,7 @@ final class DMS_Settings {
 			'manage_network',
 			'dm_logs',
 			function () {
-				require_once __DIR__ . '/../admin/views/logs.php';
+				require_once __DIR__ . '/../../admin/views/logs.php';
 				dm_render_logs_page();
 			}
 		);
@@ -198,7 +198,7 @@ final class DMS_Settings {
 			'manage_network',
 			'dm_mappings_page',
 			function () {
-				require_once __DIR__ . '/../admin/views/network-mappings.php';
+				require_once __DIR__ . '/../../admin/views/network-mappings.php';
 				dm_render_mappings_page();
 			}
 		);
@@ -245,7 +245,7 @@ final class DMS_Settings {
 		if ( ! current_user_can( 'manage_network' ) ) {
 			wp_die( esc_html__( 'Permission denied.', 'domain-mapping-system' ) );
 		}
-		require_once __DIR__ . '/../admin/views/settings.php';
+		require_once __DIR__ . '/../../admin/views/settings.php';
 		dm_render_settings_page();
 	}
 }

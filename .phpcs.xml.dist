@@ -2,8 +2,13 @@
 <ruleset name="Smart Domain Mapping System">
 	<description>WordPress Coding Standards and PHP compatibility checks for the Smart Domain Mapping System plugin.</description>
 
-	<!-- What to scan / skip. -->
-	<file>smart-domain-mapping-system</file>
+	<!-- What to scan / skip. The plugin source lives at the repo root; dev
+	     tooling (bin/, docs/, .github/, composer scripts) is not linted. -->
+	<file>./domain-mapping-system.php</file>
+	<file>./uninstall.php</file>
+	<file>./includes</file>
+	<file>./admin</file>
+	<file>./public</file>
 	<exclude-pattern>/vendor/*</exclude-pattern>
 	<exclude-pattern>/node_modules/*</exclude-pattern>
 	<exclude-pattern>/_build/*</exclude-pattern>

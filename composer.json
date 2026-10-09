@@ -42,7 +42,7 @@
     "scripts": {
         "lint": "phpcs",
         "lint:fix": "phpcbf",
-        "test": "phpunit -c smart-domain-mapping-system/phpunit.xml.dist"
+        "test": "phpunit -c phpunit.xml.dist"
     },
     "scripts-descriptions": {
         "lint": "Run PHP_CodeSniffer (WordPress + PHPCompatibility rulesets).",
