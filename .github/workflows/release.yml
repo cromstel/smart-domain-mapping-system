@@ -45,7 +45,7 @@ jobs:
             --package-name="Smart Domain Mapping System"
 
       - name: Create GitHub Release with ZIP and POT attached
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             smart-domain-mapping-system-*.zip
