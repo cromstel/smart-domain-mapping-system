@@ -13,6 +13,8 @@ class DMS_DB_Tables {
 		$verifications_table = $wpdb->base_prefix . DMS_TABLE_VERIFICATIONS;
 		$ssl_table           = $wpdb->base_prefix . DMS_TABLE_SSL;
 		$logs_table          = $wpdb->base_prefix . DMS_TABLE_LOGS;
+		$mappings_table      = $wpdb->base_prefix . DMS_TABLE_MAPPINGS;
+		$values_table        = $wpdb->base_prefix . DMS_TABLE_VALUES;
 
 		$sql = "CREATE TABLE $verifications_table (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -64,8 +66,42 @@ class DMS_DB_Tables {
 			KEY user_id (user_id)
 		) {$charset_collate};";
 
+		// Phase 1 (feature-integration plan): single-site mapping store.
+		// `primary` is a reserved word in MySQL and must stay backticked.
+		$sql4 = "CREATE TABLE $mappings_table (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			host varchar(255) NOT NULL,
+			path varchar(255) NOT NULL DEFAULT '',
+			attachment_id bigint(20) unsigned DEFAULT NULL,
+			custom_html longtext,
+			active tinyint(1) NOT NULL DEFAULT 1,
+			verified tinyint(1) NOT NULL DEFAULT 0,
+			`primary` tinyint(1) NOT NULL DEFAULT 0,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP,
+			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY host_path (host, path),
+			KEY active (active),
+			KEY verified (verified)
+		) {$charset_collate};";
+
+		$sql5 = "CREATE TABLE $values_table (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			mapping_id bigint(20) unsigned NOT NULL,
+			object_type varchar(32) NOT NULL,
+			object_id bigint(20) unsigned NOT NULL,
+			`primary` tinyint(1) NOT NULL DEFAULT 0,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY mapping_object (mapping_id, object_type, object_id),
+			KEY object (object_type, object_id),
+			KEY mapping_id (mapping_id)
+		) {$charset_collate};";
+
 		dbDelta( $sql );
 		dbDelta( $sql2 );
 		dbDelta( $sql3 );
+		dbDelta( $sql4 );
+		dbDelta( $sql5 );
 	}
 }

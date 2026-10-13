@@ -101,9 +101,9 @@ final class DMS_Settings {
 			array(
 				'option'  => 'ssl_provider',
 				'choices' => array(
-					'none'     => 'None',
-					'acme'     => 'ACME / Let\'s Encrypt',
-					'hosting'  => 'Hosting Site (no ACME)',
+					'none'    => 'None',
+					'acme'    => 'ACME / Let\'s Encrypt',
+					'hosting' => 'Hosting Site (no ACME)',
 				),
 			)
 		);

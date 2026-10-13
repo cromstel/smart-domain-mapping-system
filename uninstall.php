@@ -14,10 +14,14 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 global $wpdb;
 
 // Custom tables (network-wide base prefix, not per-site prefix).
+// Keep in sync with DMS_TABLE_* in the main file (Phase 1 added the
+// single-site mapping store: dm_mappings, dm_mapping_values).
 $tables = array(
 	$wpdb->base_prefix . 'dm_verifications',
 	$wpdb->base_prefix . 'dm_certificates',
 	$wpdb->base_prefix . 'dm_audit_log',
+	$wpdb->base_prefix . 'dm_mappings',
+	$wpdb->base_prefix . 'dm_mapping_values',
 );
 foreach ( $tables as $table ) {
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- trusted literal table name.

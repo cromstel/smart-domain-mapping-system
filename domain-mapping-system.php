@@ -27,13 +27,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DMS_VERSION', '1.1.1' );
+define( 'DMS_VERSION', '1.2.0' );
 define( 'DMS_PLUGIN_FILE', __FILE__ );
 define( 'DMS_PLUGIN_DIR', __DIR__ );
+
+// Schema version is decoupled from the release version: the data layer can
+// gain tables/migrations in unreleased work without bumping the plugin header.
+define( 'DMS_DB_VERSION', '2' );
 
 define( 'DMS_TABLE_VERIFICATIONS', 'dm_verifications' );
 define( 'DMS_TABLE_SSL', 'dm_certificates' );
 define( 'DMS_TABLE_LOGS', 'dm_audit_log' );
+define( 'DMS_TABLE_MAPPINGS', 'dm_mappings' );
+define( 'DMS_TABLE_VALUES', 'dm_mapping_values' );
 
 /**
  * Autoloads the plugin's DMS_* classes from includes/.
@@ -49,6 +55,9 @@ function dms_autoload( $class_name ) {
 	static $classes = array(
 		'DMS_DB_Tables'              => 'includes/core/class-db-tables.php',
 		'DMS_Mapping_Engine'         => 'includes/core/class-mapping-engine.php',
+		'DMS_Mode'                   => 'includes/core/class-mode.php',
+		'DMS_Single_Site_Mappings'   => 'includes/core/class-single-site-mappings.php',
+		'DMS_Mapping_Values'         => 'includes/core/class-mapping-values.php',
 		'DMS_Logging'                => 'includes/core/class-logging.php',
 		'DMS_Migration'              => 'includes/core/class-migration.php',
 		'DMS_Plugin'                 => 'includes/core/class-domain-mapping-system.php',
@@ -61,7 +70,9 @@ function dms_autoload( $class_name ) {
 		'DMS_SSL_Provider_ACME'      => 'includes/ssl/class-ssl-provider-acme.php',
 		'DMS_SSL_Providers'          => 'includes/ssl/class-ssl-providers.php',
 		'DMS_Settings'               => 'includes/admin/class-settings.php',
+		'DMS_Single_Site_Admin'      => 'includes/admin/class-single-site-admin.php',
 		'DMS_REST_API'               => 'includes/rest/class-rest-api.php',
+		'DMS_REST_DMS'               => 'includes/rest/class-rest-dms.php',
 	);
 
 	if ( isset( $classes[ $class_name ] ) ) {
@@ -98,17 +109,27 @@ register_activation_hook( DMS_PLUGIN_FILE, 'dm_activation' );
 register_deactivation_hook( DMS_PLUGIN_FILE, 'dm_deactivation' );
 
 /**
- * Creates/updates tables when the plugin version changes.
+ * Creates/updates tables when the schema version changes, and records the
+ * plugin version marker. Schema (dm_db_version) is tracked independently of
+ * the release version so data-layer migrations can ship without a version
+ * bump (see DMS_DB_VERSION).
  */
 add_action( 'plugins_loaded', 'dm_version_check' );
 function dm_version_check() {
+	$db_version = get_site_option( 'dm_db_version', '0' );
+	if ( version_compare( $db_version, DMS_DB_VERSION, '<' ) ) {
+		DMS_DB_Tables::create_tables();
+		update_site_option( 'dm_db_version', DMS_DB_VERSION );
+	}
+
 	$current = get_site_option( 'dm_version', '0' );
 	if ( version_compare( $current, DMS_VERSION, '<' ) ) {
-		DMS_DB_Tables::create_tables();
 		update_site_option( 'dm_version', DMS_VERSION );
 	}
 }
 
 DMS_REST_API::get_instance();
+DMS_REST_DMS::get_instance();
 DMS_Health_Check::get_instance();
+DMS_Single_Site_Admin::get_instance();
 DMS_Plugin::get_instance();
