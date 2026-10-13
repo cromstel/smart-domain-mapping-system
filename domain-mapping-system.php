@@ -57,6 +57,7 @@ function dms_autoload( $class_name ) {
 		'DMS_SSL_Manager'            => 'includes/ssl/class-ssl-manager.php',
 		'DMS_SSL_Provider_Interface' => 'includes/ssl/class-ssl-provider-interface.php',
 		'DMS_SSL_Provider_None'      => 'includes/ssl/class-ssl-provider-none.php',
+		'DMS_SSL_Provider_Hosting'   => 'includes/ssl/class-ssl-provider-hosting.php',
 		'DMS_SSL_Provider_ACME'      => 'includes/ssl/class-ssl-provider-acme.php',
 		'DMS_SSL_Providers'          => 'includes/ssl/class-ssl-providers.php',
 		'DMS_Settings'               => 'includes/admin/class-settings.php',

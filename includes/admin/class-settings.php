@@ -101,8 +101,9 @@ final class DMS_Settings {
 			array(
 				'option'  => 'ssl_provider',
 				'choices' => array(
-					'none' => 'None',
-					'acme' => 'ACME / Let\'s Encrypt',
+					'none'     => 'None',
+					'acme'     => 'ACME / Let\'s Encrypt',
+					'hosting'  => 'Hosting Site (no ACME)',
 				),
 			)
 		);
@@ -128,9 +129,9 @@ final class DMS_Settings {
 		}
 		$clean                     = array();
 		$clean['default_redirect'] = isset( $input['default_redirect'] ) && ( '301' === $input['default_redirect'] || '302' === $input['default_redirect'] ) ? sanitize_key( $input['default_redirect'] ) : '301';
-		$clean['ssl_provider']     = isset( $input['ssl_provider'] ) && in_array( $input['ssl_provider'], array( 'none', 'acme' ), true ) ? sanitize_key( $input['ssl_provider'] ) : 'none';
+		$clean['ssl_provider']     = isset( $input['ssl_provider'] ) && in_array( $input['ssl_provider'], array( 'none', 'acme', 'hosting' ), true ) ? sanitize_key( $input['ssl_provider'] ) : 'none';
 
-		$retention                     = isset( $input['audit_retention_days'] ) ? absint( $input['audit_retention_days'] ) : 180;
+		$retention                     = isset( $input['audit_retention_days'] ) ? max( 0, (int) $input['audit_retention_days'] ) : 180;
 		$retention                     = min( $retention, 3650 );
 		$clean['audit_retention_days'] = (string) $retention;
 

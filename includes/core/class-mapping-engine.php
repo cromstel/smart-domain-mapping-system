@@ -57,6 +57,14 @@ final class DMS_Mapping_Engine {
 	const ORIGINAL_PREFIX = 'dm_original_';
 
 	/**
+	 * Maximum domain length that still fits in wp_sitemeta.meta_key once the
+	 * longest plugin prefix (dm_domain_ / dm_active_) is added.
+	 *
+	 * @var int
+	 */
+	const MAX_STORED_DOMAIN_LENGTH = 245;
+
+	/**
 	 * Domain validation pattern (optional `*.` wildcard prefix allowed).
 	 *
 	 * @var string
@@ -105,11 +113,18 @@ final class DMS_Mapping_Engine {
 		if ( '' === $token ) {
 			return;
 		}
+		$host   = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+		$host   = preg_replace( '/:\\d+$/', '', strtolower( trim( $host ) ) );
+		$domain = self::normalize_domain( $host );
+		if ( false === $domain ) {
+			return;
+		}
 		global $wpdb;
 		$table = $wpdb->base_prefix . DMS_TABLE_VERIFICATIONS;
 		$row   = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id FROM {$table} WHERE token_hash = %s AND status IN ( 'pending', 'failed' ) AND ( expires_at IS NULL OR expires_at > %s ) ORDER BY id DESC LIMIT 1",
+				"SELECT id FROM {$table} WHERE domain = %s AND token_hash = %s AND status IN ( 'pending', 'failed' ) AND ( expires_at IS NULL OR expires_at > %s ) ORDER BY id DESC LIMIT 1",
+				$domain,
 				hash_hmac( 'sha256', $token, AUTH_KEY ),
 				current_time( 'mysql' )
 			)
@@ -139,7 +154,7 @@ final class DMS_Mapping_Engine {
 		$domain = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $domain );
 		$domain = preg_replace( '#^www\.#', '', $domain );
 		$domain = rtrim( $domain, './' );
-		if ( '' === $domain || strlen( $domain ) > 253 ) {
+		if ( '' === $domain || strlen( $domain ) > self::MAX_STORED_DOMAIN_LENGTH ) {
 			return false;
 		}
 		if ( ! preg_match( self::DOMAIN_PATTERN, $domain ) ) {
@@ -433,10 +448,13 @@ final class DMS_Mapping_Engine {
 		if ( null === $row ) {
 			return new WP_Error( 'dm_not_found', 'Mapping not found.', array( 'status' => 404 ) );
 		}
-		$domain  = substr( $row->meta_key, strlen( self::META_PREFIX ) );
-		$blog_id = (int) $row->meta_value;
+		$domain   = substr( $row->meta_key, strlen( self::META_PREFIX ) );
+		$blog_id  = (int) $row->meta_value;
+		$restored = self::maybe_restore_primary( $blog_id, $domain );
+		if ( is_wp_error( $restored ) ) {
+			return $restored;
+		}
 		update_site_meta( get_current_network_id(), self::ACTIVE_PREFIX . $domain, '0' );
-		self::maybe_restore_primary( $blog_id, $domain );
 		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'mapping.disable', '' );
 		return self::get_mapping( $mapping_id );
 	}
@@ -458,7 +476,10 @@ final class DMS_Mapping_Engine {
 		$domain  = substr( $row->meta_key, strlen( self::META_PREFIX ) );
 		$blog_id = (int) $row->meta_value;
 
-		self::maybe_restore_primary( $blog_id, $domain );
+		$restored = self::maybe_restore_primary( $blog_id, $domain );
+		if ( is_wp_error( $restored ) ) {
+			return $restored;
+		}
 
 		$deleted = $wpdb->delete(
 			$wpdb->sitemeta,
@@ -735,20 +756,31 @@ final class DMS_Mapping_Engine {
 	 *
 	 * @param int    $blog_id Blog ID.
 	 * @param string $domain  Normalized domain being demoted/removed.
+	 * @return true|WP_Error True when no restoration is required or it succeeds.
 	 */
 	private static function maybe_restore_primary( $blog_id, $domain ) {
 		if ( ! self::is_primary( $blog_id, $domain ) ) {
-			return;
+			return true;
 		}
 		$network_id = get_current_network_id();
 		$original   = get_site_meta( $network_id, self::ORIGINAL_PREFIX . $blog_id, true );
 		if ( ! $original ) {
-			return;
+			return new WP_Error(
+				'dm_restore_failed',
+				'Cannot restore the original site domain because it is missing.',
+				array( 'status' => 500 )
+			);
 		}
 		$result = wp_update_site( $blog_id, array( 'domain' => $original ) );
-		if ( ! is_wp_error( $result ) ) {
-			delete_site_meta( $network_id, self::ORIGINAL_PREFIX . $blog_id );
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error(
+				'dm_restore_failed',
+				'Could not restore the original site domain.',
+				array( 'status' => 500 )
+			);
 		}
+		delete_site_meta( $network_id, self::ORIGINAL_PREFIX . $blog_id );
+		return true;
 	}
 
 	/**

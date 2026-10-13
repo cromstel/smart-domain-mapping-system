@@ -4,9 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * No-op provider: certificate lifecycle is tracked manually.
+ * No-op provider used when SSL management is disabled.
  */
 final class DMS_SSL_Provider_None implements DMS_SSL_Provider_Interface {
+
 	public function issue_certificate( int $blog_id, string $domain ): bool {
 		return false;
 	}

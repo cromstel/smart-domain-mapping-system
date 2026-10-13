@@ -13,10 +13,10 @@ final class DMS_SSL_Manager {
 		return self::$instance;
 	}
 
-	public function record_certificate( int $blog_id, string $domain, string $provider = 'none', string $status = 'pending', ?string $expires_at = null ) {
+	public function record_certificate( int $blog_id, string $domain, string $provider = 'none', string $status = 'pending', ?string $expires_at = null ): bool {
 		global $wpdb;
-		$table = $wpdb->base_prefix . DMS_TABLE_SSL;
-		$wpdb->insert(
+		$table    = $wpdb->base_prefix . DMS_TABLE_SSL;
+		$inserted = $wpdb->insert(
 			$table,
 			array(
 				'blog_id'    => absint( $blog_id ),
@@ -28,6 +28,9 @@ final class DMS_SSL_Manager {
 			),
 			array( '%d', '%s', '%s', '%s', '%s', '%s' )
 		);
+		if ( false === $inserted ) {
+			return false;
+		}
 		DMS_Logging::get_instance()->log(
 			$blog_id,
 			$domain,
@@ -40,6 +43,7 @@ final class DMS_SSL_Manager {
 				)
 			)
 		);
+		return true;
 	}
 
 	public function get_certificate( int $blog_id, string $domain ) {

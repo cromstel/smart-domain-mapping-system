@@ -194,12 +194,12 @@ final class DMS_DNS_Verification {
 	 */
 	private function check_http( string $domain, string $token, string $stored_hash ): ?string {
 		$url      = 'http://' . $domain . '/.well-known/acme-challenge/' . rawurlencode( $token );
-		$response = wp_remote_get(
+		$response = wp_safe_remote_get(
 			$url,
 			array(
-				'timeout'     => 10,
-				'redirection' => 3,
-				'sslverify'   => false,
+				'timeout'             => 10,
+				'redirection'         => 3,
+				'limit_response_size' => 1024,
 			)
 		);
 		if ( is_wp_error( $response ) ) {

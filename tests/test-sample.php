@@ -19,6 +19,14 @@ class DMS_Test_Mapping_Engine extends WP_UnitTestCase {
 		$this->assertFalse( $engine->invoke( null, '' ) );
 	}
 
+	public function test_normalize_domain_rejects_a_domain_that_cannot_fit_in_sitemeta_key() {
+		$label63 = str_repeat( 'a', 63 );
+		$domain   = $label63 . '.' . $label63 . '.' . $label63 . '.' . str_repeat( 'b', 50 ) . '.com';
+
+		$this->assertSame( 246, strlen( $domain ) );
+		$this->assertFalse( DMS_Mapping_Engine::normalize_domain( $domain ) );
+	}
+
 	public function test_meta_key_for() {
 		$this->assertEquals( 'dm_domain_example.com', DMS_Mapping_Engine::meta_key_for( 'WWW.Example.com' ) );
 		$this->assertNull( DMS_Mapping_Engine::meta_key_for( 'invalid domain' ) );
@@ -81,6 +89,20 @@ class DMS_Test_Mapping_Engine extends WP_UnitTestCase {
 		$reprimary = DMS_Mapping_Engine::set_primary( $mapping_id );
 		$this->assertTrue( $reprimary['primary'] );
 		$this->assertEquals( 'primary-test.example', get_site( $blog_id )->domain );
+	}
+
+	public function test_disabling_a_primary_mapping_fails_when_its_original_domain_is_missing() {
+		$blog_id    = self::factory()->blog->create();
+		$mapping_id = DMS_Mapping_Engine::add_mapping( $blog_id, 'restore-guard.example' );
+
+		DMS_Mapping_Engine::set_primary( $mapping_id );
+		delete_site_meta( get_current_network_id(), DMS_Mapping_Engine::ORIGINAL_PREFIX . $blog_id );
+
+		$result = DMS_Mapping_Engine::disable_mapping( $mapping_id );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'dm_restore_failed', $result->get_error_code() );
+		$this->assertSame( 'restore-guard.example', get_site( $blog_id )->domain );
 	}
 
 	public function test_wildcard_mappings_resolve_by_parent_walk() {

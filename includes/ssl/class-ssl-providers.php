@@ -18,6 +18,9 @@ final class DMS_SSL_Providers {
 			case 'acme':
 				$provider = new DMS_SSL_Provider_ACME();
 				break;
+			case 'hosting':
+				$provider = new DMS_SSL_Provider_Hosting();
+				break;
 			default:
 				$provider = new DMS_SSL_Provider_None();
 		}
