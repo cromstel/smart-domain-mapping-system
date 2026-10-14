@@ -304,6 +304,82 @@ final class DMS_REST_DMS {
 				),
 			)
 		);
+
+		// Phase 2B: Per-domain customization endpoints.
+		$this->register_per_domain_routes();
+	}
+
+	/**
+	 * Registers per-domain customization REST routes.
+	 *
+	 * @return void
+	 */
+	private function register_per_domain_routes() {
+		$per_domain_routes = array(
+			'custom-code' => array(
+				'sanitizer' => array( $this, 'sanitize_custom_html' ),
+				'field'     => 'custom_html',
+			),
+			'favicon'     => array(
+				'sanitizer' => 'absint',
+				'field'     => 'attachment_id',
+			),
+			'menu'        => array(
+				'sanitizer' => 'absint',
+				'field'     => 'menu_id',
+			),
+			'language'    => array(
+				'sanitizer' => array( $this, 'sanitize_language' ),
+				'field'     => 'language',
+			),
+			'404'         => array(
+				'sanitizer' => array( $this, 'sanitize_redirect_404' ),
+				'field'     => 'redirect_404',
+			),
+		);
+
+		foreach ( $per_domain_routes as $endpoint => $config ) {
+			register_rest_route(
+				'dms/v1',
+				'/mappings/(?P<id>\d+)/' . $endpoint,
+				array(
+					array(
+						'methods'             => WP_REST_Server::READABLE,
+						'callback'            => array( $this, 'get_per_domain_field' ),
+						'permission_callback' => array( $this, 'can_access_mapping' ),
+						'args'                => array(
+							'id'    => array(
+								'required'          => true,
+								'sanitize_callback' => 'absint',
+							),
+							'field' => array(
+								'required'          => true,
+								'sanitize_callback' => 'sanitize_key',
+							),
+						),
+					),
+					array(
+						'methods'             => 'PUT, PATCH',
+						'callback'            => array( $this, 'update_per_domain_field' ),
+						'permission_callback' => array( $this, 'can_access_mapping' ),
+						'args'                => array(
+							'id'    => array(
+								'required'          => true,
+								'sanitize_callback' => 'absint',
+							),
+							'field' => array(
+								'required'          => true,
+								'sanitize_callback' => 'sanitize_key',
+							),
+							'value' => array(
+								'required'          => true,
+								'sanitize_callback' => $config['sanitizer'],
+							),
+						),
+					),
+				)
+			);
+		}
 	}
 
 	/* ---------------------------------------------------------------------
@@ -387,6 +463,16 @@ final class DMS_REST_DMS {
 
 	public function validate_batch_items( $value ) {
 		return is_array( $value ) && count( $value ) <= self::BATCH_LIMIT;
+	}
+
+	// Phase 2B: Per-domain field sanitizers.
+	public function sanitize_language( $value ) {
+		$normalized = DMS_Single_Site_Mappings::validate_language( $value );
+		return false !== $normalized ? $normalized : '';
+	}
+
+	public function sanitize_redirect_404( $value ) {
+		return DMS_Single_Site_Mappings::sanitize_redirect_404( $value );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -913,5 +999,69 @@ final class DMS_REST_DMS {
 			return;
 		}
 		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), $action, wp_json_encode( $context ) );
+	}
+
+	// Phase 2B: Per-domain field handlers.
+	public function get_per_domain_field( $request ) {
+		$id    = (int) $request->get_param( 'id' );
+		$field = sanitize_key( (string) $request->get_param( 'field' ) );
+
+		$mapping = $this->resolve_mapping( $id );
+		if ( is_wp_error( $mapping ) ) {
+			return $mapping;
+		}
+
+		$allowed = array( 'custom_html', 'attachment_id', 'menu_id', 'language', 'redirect_404' );
+		if ( ! in_array( $field, $allowed, true ) ) {
+			return new WP_Error( 'dms_invalid_field', __( 'Invalid per-domain field.', 'domain-mapping-system' ), array( 'status' => 400 ) );
+		}
+
+		return rest_ensure_response(
+			array(
+				'id'    => $mapping['id'],
+				'field' => $field,
+				'value' => $mapping[ $field ] ?? null,
+			)
+		);
+	}
+
+	public function update_per_domain_field( $request ) {
+		$id    = (int) $request->get_param( 'id' );
+		$field = sanitize_key( (string) $request->get_param( 'field' ) );
+		$value = $request->get_param( 'value' );
+
+		$mapping = $this->resolve_mapping( $id );
+		if ( is_wp_error( $mapping ) ) {
+			return $mapping;
+		}
+
+		$allowed = array( 'custom_html', 'attachment_id', 'menu_id', 'language', 'redirect_404' );
+		if ( ! in_array( $field, $allowed, true ) ) {
+			return new WP_Error( 'dms_invalid_field', __( 'Invalid per-domain field.', 'domain-mapping-system' ), array( 'status' => 400 ) );
+		}
+
+		$update  = array( $field => $value );
+		$updated = DMS_Single_Site_Mappings::update_mapping( $id, $update );
+		if ( is_wp_error( $updated ) ) {
+			return $updated;
+		}
+
+		$this->audit_log(
+			null,
+			$updated['host'] . ( $updated['path'] ? '/' . $updated['path'] : '' ),
+			'dms.mapping.per_domain_update',
+			array(
+				'mapping_id' => $id,
+				'field'      => $field,
+			)
+		);
+
+		return rest_ensure_response(
+			array(
+				'id'    => $updated['id'],
+				'field' => $field,
+				'value' => $updated[ $field ] ?? null,
+			)
+		);
 	}
 }

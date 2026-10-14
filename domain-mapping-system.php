@@ -73,6 +73,12 @@ function dms_autoload( $class_name ) {
 		'DMS_Single_Site_Admin'      => 'includes/admin/class-single-site-admin.php',
 		'DMS_REST_API'               => 'includes/rest/class-rest-api.php',
 		'DMS_REST_DMS'               => 'includes/rest/class-rest-dms.php',
+		// Phase 2B: Per-domain customization.
+		'DMS_Per_Domain_Custom_Code' => 'includes/per-domain/class-custom-code.php',
+		'DMS_Per_Domain_Favicon'     => 'includes/per-domain/class-favicon.php',
+		'DMS_Per_Domain_Menu'        => 'includes/per-domain/class-menu.php',
+		'DMS_Per_Domain_Language'    => 'includes/per-domain/class-language.php',
+		'DMS_Per_Domain_404'         => 'includes/per-domain/class-404.php',
 	);
 
 	if ( isset( $classes[ $class_name ] ) ) {
@@ -133,3 +139,12 @@ DMS_REST_DMS::get_instance();
 DMS_Health_Check::get_instance();
 DMS_Single_Site_Admin::get_instance();
 DMS_Plugin::get_instance();
+
+// Phase 2B: Per-domain customization (single-site mode only).
+if ( DMS_Mode::is_single_site() ) {
+	DMS_Per_Domain_Custom_Code::get_instance();
+	DMS_Per_Domain_Favicon::get_instance();
+	DMS_Per_Domain_Menu::get_instance();
+	DMS_Per_Domain_Language::get_instance();
+	DMS_Per_Domain_404::get_instance();
+}
