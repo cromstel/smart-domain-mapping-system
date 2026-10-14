@@ -67,6 +67,7 @@ class DMS_DB_Tables {
 		) {$charset_collate};";
 
 		// Phase 1 (feature-integration plan): single-site mapping store.
+		// Phase 2: added menu_id, language, redirect_404, rewrite_rules, query_string_rules.
 		// `primary` is a reserved word in MySQL and must stay backticked.
 		$sql4 = "CREATE TABLE $mappings_table (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -74,6 +75,11 @@ class DMS_DB_Tables {
 			path varchar(255) NOT NULL DEFAULT '',
 			attachment_id bigint(20) unsigned DEFAULT NULL,
 			custom_html longtext,
+			menu_id bigint(20) unsigned DEFAULT NULL,
+			language varchar(10) DEFAULT NULL,
+			redirect_404 text DEFAULT NULL,
+			rewrite_rules json DEFAULT NULL,
+			query_string_rules json DEFAULT NULL,
 			active tinyint(1) NOT NULL DEFAULT 1,
 			verified tinyint(1) NOT NULL DEFAULT 0,
 			`primary` tinyint(1) NOT NULL DEFAULT 0,
@@ -103,5 +109,48 @@ class DMS_DB_Tables {
 		dbDelta( $sql3 );
 		dbDelta( $sql4 );
 		dbDelta( $sql5 );
+
+		// Migration 3: add per-domain meta columns to existing dm_mappings table.
+		// dbDelta handles CREATE TABLE but not ALTER TABLE for new columns on existing tables.
+		// Run explicit ALTERs if columns don't exist (idempotent via IF NOT EXISTS via dbDelta limitations).
+		self::maybe_add_mapping_columns( $mappings_table );
+	}
+
+	/**
+	 * Adds Phase 2 columns to dm_mappings if they don't exist.
+	 * Runs on every schema upgrade (gated by DMS_DB_VERSION).
+	 *
+	 * @param string $table Fully qualified table name.
+	 * @return void
+	 */
+	private static function maybe_add_mapping_columns( string $table ) {
+		global $wpdb;
+
+		$columns = $wpdb->get_col( "DESCRIBE {$table}", 0 );
+		$columns = array_flip( $columns );
+
+		$alter_statements = array();
+
+		if ( ! isset( $columns['menu_id'] ) ) {
+			$alter_statements[] = 'ADD COLUMN menu_id bigint(20) unsigned DEFAULT NULL';
+		}
+		if ( ! isset( $columns['language'] ) ) {
+			$alter_statements[] = 'ADD COLUMN language varchar(10) DEFAULT NULL';
+		}
+		if ( ! isset( $columns['redirect_404'] ) ) {
+			$alter_statements[] = 'ADD COLUMN redirect_404 text DEFAULT NULL';
+		}
+		if ( ! isset( $columns['rewrite_rules'] ) ) {
+			$alter_statements[] = 'ADD COLUMN rewrite_rules json DEFAULT NULL';
+		}
+		if ( ! isset( $columns['query_string_rules'] ) ) {
+			$alter_statements[] = 'ADD COLUMN query_string_rules json DEFAULT NULL';
+		}
+
+		if ( ! empty( $alter_statements ) ) {
+			$sql = "ALTER TABLE {$table} " . implode( ', ', $alter_statements );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table/column names.
+			$wpdb->query( $sql );
+		}
 	}
 }

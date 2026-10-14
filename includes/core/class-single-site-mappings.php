@@ -175,11 +175,95 @@ final class DMS_Single_Site_Mappings {
 	}
 
 	/**
+	 * Validates a language code (ISO 639-1 or locale format).
+	 *
+	 * @param mixed $lang Raw language code.
+	 * @return string|false Validated code (lowercase), or false.
+	 */
+	public static function validate_language( $lang ) {
+		if ( ! is_string( $lang ) || '' === trim( $lang ) ) {
+			return false;
+		}
+		$lang = strtolower( trim( $lang ) );
+		// Accept ISO 639-1 (2 letters) or locale (e.g., en_US, de_DE).
+		if ( 1 === preg_match( '#^[a-z]{2}(_[A-Z]{2})?$#', $lang ) ) {
+			return $lang;
+		}
+		return false;
+	}
+
+	/**
+	 * Sanitizes redirect_404 (post ID or URL).
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string Sanitized value.
+	 */
+	public static function sanitize_redirect_404( $value ) {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+		$value = trim( $value );
+		if ( '' === $value ) {
+			return '';
+		}
+		// If numeric, treat as post ID.
+		if ( ctype_digit( $value ) ) {
+			return (string) absint( $value );
+		}
+		// Otherwise validate as URL.
+		$url = esc_url_raw( $value );
+		return $url === $value ? $url : '';
+	}
+
+	/**
+	 * Sanitizes rewrite rules JSON.
+	 *
+	 * @param mixed $value Raw JSON string or array.
+	 * @return string|null JSON string or null.
+	 */
+	public static function sanitize_rewrite_rules( $value ) {
+		if ( null === $value || '' === $value ) {
+			return null;
+		}
+		if ( is_array( $value ) ) {
+			$json = wp_json_encode( $value );
+			return false !== $json ? $json : null;
+		}
+		if ( is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+			return ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) ? $value : null;
+		}
+		return null;
+	}
+
+	/**
+	 * Sanitizes query string rules JSON.
+	 *
+	 * @param mixed $value Raw JSON string or array.
+	 * @return string|null JSON string or null.
+	 */
+	public static function sanitize_query_string_rules( $value ) {
+		if ( null === $value || '' === $value ) {
+			return null;
+		}
+		if ( is_array( $value ) ) {
+			$json = wp_json_encode( $value );
+			return false !== $json ? $json : null;
+		}
+		if ( is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+			return ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) ? $value : null;
+		}
+		return null;
+	}
+
+	/**
 	 * Adds a mapping. Host is required; path defaults to root.
 	 *
 	 * @param string $host Normalized host (validated here again).
 	 * @param string $path Subdirectory path ('' = root).
-	 * @param array  $args attachment_id, custom_html, active, verified, primary.
+	 * @param array  $args attachment_id, custom_html, menu_id, language, redirect_404,
+	 *                    rewrite_rules, query_string_rules, active, verified, primary.
 	 * @return int|WP_Error Mapping ID on success.
 	 */
 	public static function add_mapping( string $host, string $path = '', array $args = array() ) {
@@ -197,24 +281,34 @@ final class DMS_Single_Site_Mappings {
 			return new WP_Error( 'dms_host_exists', __( 'That host/path combination is already mapped.', 'domain-mapping-system' ), array( 'status' => 409 ) );
 		}
 
-		$now        = current_time( 'mysql' );
-		$table      = self::table();
-		$attachment = isset( $args['attachment_id'] ) ? absint( $args['attachment_id'] ) : null;
+		$now         = current_time( 'mysql' );
+		$table       = self::table();
+		$attachment  = isset( $args['attachment_id'] ) ? absint( $args['attachment_id'] ) : null;
+		$menu_id     = isset( $args['menu_id'] ) ? absint( $args['menu_id'] ) : null;
+		$language    = isset( $args['language'] ) ? self::validate_language( $args['language'] ) : null;
+		$redirect404 = isset( $args['redirect_404'] ) ? self::sanitize_redirect_404( $args['redirect_404'] ) : '';
+		$rewrite     = isset( $args['rewrite_rules'] ) ? self::sanitize_rewrite_rules( $args['rewrite_rules'] ) : null;
+		$query       = isset( $args['query_string_rules'] ) ? self::sanitize_query_string_rules( $args['query_string_rules'] ) : null;
 
 		$inserted = $wpdb->insert(
 			$table,
 			array(
-				'host'          => $host,
-				'path'          => $path,
-				'attachment_id' => $attachment,
-				'custom_html'   => self::sanitize_custom_html( isset( $args['custom_html'] ) ? $args['custom_html'] : '' ),
-				'active'        => isset( $args['active'] ) ? (int) (bool) $args['active'] : 1,
-				'verified'      => isset( $args['verified'] ) ? (int) (bool) $args['verified'] : 0,
-				'primary'       => isset( $args['primary'] ) ? (int) (bool) $args['primary'] : 0,
-				'created_at'    => $now,
-				'updated_at'    => $now,
+				'host'               => $host,
+				'path'               => $path,
+				'attachment_id'      => $attachment,
+				'custom_html'        => self::sanitize_custom_html( isset( $args['custom_html'] ) ? $args['custom_html'] : '' ),
+				'menu_id'            => $menu_id,
+				'language'           => $language,
+				'redirect_404'       => $redirect404,
+				'rewrite_rules'      => $rewrite,
+				'query_string_rules' => $query,
+				'active'             => isset( $args['active'] ) ? (int) (bool) $args['active'] : 1,
+				'verified'           => isset( $args['verified'] ) ? (int) (bool) $args['verified'] : 0,
+				'primary'            => isset( $args['primary'] ) ? (int) (bool) $args['primary'] : 0,
+				'created_at'         => $now,
+				'updated_at'         => $now,
 			),
-			array( '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' )
+			array( '%s', '%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s' )
 		);
 		if ( false === $inserted || ! $wpdb->insert_id ) {
 			return new WP_Error( 'dms_insert_failed', __( 'Could not store the mapping.', 'domain-mapping-system' ), array( 'status' => 500 ) );
@@ -355,8 +449,9 @@ final class DMS_Single_Site_Mappings {
 	 * are left untouched. Host/path changes are validated + uniqueness-checked.
 	 *
 	 * @param int   $mapping_id Mapping ID.
-	 * @param array $fields     host, path, attachment_id, custom_html, active,
-	 *                          verified, primary.
+	 * @param array $fields     host, path, attachment_id, custom_html, menu_id,
+	 *                          language, redirect_404, rewrite_rules, query_string_rules,
+	 *                          active, verified, primary.
 	 * @return array|WP_Error Updated mapping.
 	 */
 	public static function update_mapping( int $mapping_id, array $fields ) {
@@ -393,6 +488,30 @@ final class DMS_Single_Site_Mappings {
 		if ( array_key_exists( 'custom_html', $fields ) ) {
 			$data['custom_html'] = self::sanitize_custom_html( $fields['custom_html'] );
 			$fmt[]               = '%s';
+		}
+		if ( array_key_exists( 'menu_id', $fields ) ) {
+			$data['menu_id'] = absint( $fields['menu_id'] );
+			$fmt[]           = '%d';
+		}
+		if ( array_key_exists( 'language', $fields ) ) {
+			$lang = self::validate_language( $fields['language'] );
+			if ( false === $lang && '' !== $fields['language'] ) {
+				return new WP_Error( 'dms_invalid_language', __( 'Invalid language code. Use ISO 639-1 (e.g., en, de) or locale (e.g., en_US).', 'domain-mapping-system' ), array( 'status' => 400 ) );
+			}
+			$data['language'] = $lang;
+			$fmt[]            = '%s';
+		}
+		if ( array_key_exists( 'redirect_404', $fields ) ) {
+			$data['redirect_404'] = self::sanitize_redirect_404( $fields['redirect_404'] );
+			$fmt[]                = '%s';
+		}
+		if ( array_key_exists( 'rewrite_rules', $fields ) ) {
+			$data['rewrite_rules'] = self::sanitize_rewrite_rules( $fields['rewrite_rules'] );
+			$fmt[]                 = '%s';
+		}
+		if ( array_key_exists( 'query_string_rules', $fields ) ) {
+			$data['query_string_rules'] = self::sanitize_query_string_rules( $fields['query_string_rules'] );
+			$fmt[]                      = '%s';
 		}
 		foreach ( array( 'active', 'verified', 'primary' ) as $flag ) {
 			if ( array_key_exists( $flag, $fields ) ) {
@@ -493,16 +612,21 @@ final class DMS_Single_Site_Mappings {
 	 */
 	private static function decorate( $row ) {
 		return array(
-			'id'            => (int) $row['id'],
-			'host'          => $row['host'],
-			'path'          => $row['path'],
-			'attachment_id' => $row['attachment_id'] ? (int) $row['attachment_id'] : null,
-			'custom_html'   => $row['custom_html'],
-			'active'        => (bool) $row['active'],
-			'verified'      => (bool) $row['verified'],
-			'primary'       => (bool) $row['primary'],
-			'created_at'    => $row['created_at'],
-			'updated_at'    => $row['updated_at'],
+			'id'                 => (int) $row['id'],
+			'host'               => $row['host'],
+			'path'               => $row['path'],
+			'attachment_id'      => $row['attachment_id'] ? (int) $row['attachment_id'] : null,
+			'custom_html'        => $row['custom_html'],
+			'menu_id'            => $row['menu_id'] ? (int) $row['menu_id'] : null,
+			'language'           => $row['language'],
+			'redirect_404'       => $row['redirect_404'],
+			'rewrite_rules'      => $row['rewrite_rules'] ? json_decode( $row['rewrite_rules'], true ) : null,
+			'query_string_rules' => $row['query_string_rules'] ? json_decode( $row['query_string_rules'], true ) : null,
+			'active'             => (bool) $row['active'],
+			'verified'           => (bool) $row['verified'],
+			'primary'            => (bool) $row['primary'],
+			'created_at'         => $row['created_at'],
+			'updated_at'         => $row['updated_at'],
 		);
 	}
 }

@@ -44,12 +44,17 @@ Tables created by `DMS_DB_Tables::create_tables()` (`includes/core/class-db-tabl
 - `created_at` datetime DEFAULT CURRENT_TIMESTAMP
 - INDEX: `blog_id` (blog_id), `user_id` (user_id), `action` (action)
 
-## `dm_mappings` *(added in migration 2 — single-site mode / `dms/v1`)*
+## `dm_mappings` *(added in migration 2 — single-site mode / `dms/v1`; extended in migration 3 — Phase 2 per-domain meta)*
 - `id` bigint(20) unsigned AUTO_INCREMENT PRIMARY KEY
 - `host` varchar(255) NOT NULL (normalized lower-case domain)
 - `path` varchar(255) NOT NULL DEFAULT '' (subdirectory; '' = root)
 - `attachment_id` bigint(20) unsigned DEFAULT NULL (per-domain favicon / reference image)
 - `custom_html` longtext NULL (per-domain head/body code, wp_kses allow-listed — scripts are NOT stored)
+- `menu_id` bigint(20) unsigned DEFAULT NULL (per-domain nav menu; `wp_get_nav_menu_object()`)
+- `language` varchar(10) DEFAULT NULL (ISO 639-1 or locale, e.g., `en`, `en_US`)
+- `redirect_404` text DEFAULT NULL (post ID or absolute URL for custom 404 target)
+- `rewrite_rules` json DEFAULT NULL (array of rewrite rule objects: `{source, target, regex?, redirect?}`)
+- `query_string_rules` json DEFAULT NULL (array of query string rule objects: `{action, key, value?}`)
 - `active` tinyint(1) NOT NULL DEFAULT 1
 - `verified` tinyint(1) NOT NULL DEFAULT 0
 - `primary` tinyint(1) NOT NULL DEFAULT 0 (backticked: reserved word)
