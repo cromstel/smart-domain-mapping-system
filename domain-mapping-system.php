@@ -84,6 +84,8 @@ function dms_autoload( $class_name ) {
 		'DMS_Global_Page_Mapping'    => 'includes/global/class-page-mapping.php',
 		'DMS_Global_Product_Mapping' => 'includes/global/class-product-mapping.php',
 		'DMS_Global_Domain_Mapping'  => 'includes/global/class-domain-mapping.php',
+		// Phase 2D: Rewrite engine.
+		'DMS_Rewrite_Engine'         => 'includes/rewrite/class-rewrite-engine.php',
 	);
 
 	if ( isset( $classes[ $class_name ] ) ) {
@@ -107,6 +109,10 @@ function dm_activation() {
 	if ( ! wp_next_scheduled( 'dm_daily_health_check' ) ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'dm_daily_health_check' );
 	}
+	// Phase 2D: Install rewrite engine mu-plugins drop-in.
+	if ( DMS_Mode::is_single_site() ) {
+		dms_rewrite_install();
+	}
 }
 
 /**
@@ -118,6 +124,47 @@ function dm_deactivation() {
 
 register_activation_hook( DMS_PLUGIN_FILE, 'dm_activation' );
 register_deactivation_hook( DMS_PLUGIN_FILE, 'dm_deactivation' );
+
+/**
+ * Uninstall handler: drops tables, removes mu-plugins drop-in.
+ */
+function dm_uninstall() {
+	// Phase 2D: Remove rewrite engine mu-plugins drop-in.
+	if ( DMS_Mode::is_single_site() ) {
+		dms_rewrite_uninstall();
+	}
+}
+
+register_uninstall_hook( DMS_PLUGIN_FILE, 'dm_uninstall' );
+
+/**
+ * Phase 2D: Installs the rewrite engine mu-plugins drop-in.
+ */
+function dms_rewrite_install() {
+	$mu_dir  = WP_CONTENT_DIR . '/mu-plugins';
+	$mu_file = $mu_dir . '/dms-rewrite-loader.php';
+
+	// Create mu-plugins directory if needed.
+	if ( ! is_dir( $mu_dir ) ) {
+		wp_mkdir_p( $mu_dir );
+	}
+
+	$source = DMS_PLUGIN_DIR . '/includes/rewrite/class-rewrite-loader.php';
+	if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
+		copy( $source, $mu_file );
+	}
+}
+
+/**
+ * Phase 2D: Removes the rewrite engine mu-plugins drop-in.
+ */
+function dms_rewrite_uninstall() {
+	$mu_file = WP_CONTENT_DIR . '/mu-plugins/dms-rewrite-loader.php';
+	if ( file_exists( $mu_file ) ) {
+		@unlink( $mu_file );
+	}
+	flush_rewrite_rules();
+}
 
 /**
  * Creates/updates tables when the schema version changes, and records the
