@@ -22,7 +22,7 @@ final class DMS_Mapping_Values {
 	 *
 	 * @var array
 	 */
-	const OBJECT_TYPES = array( 'post', 'page', 'category', 'tag', 'archive', 'product', 'cpt' );
+	const OBJECT_TYPES = array( 'post', 'page', 'category', 'tag', 'term', 'archive', 'product', 'domain', 'cpt' );
 
 	/**
 	 * Cache group (shared).

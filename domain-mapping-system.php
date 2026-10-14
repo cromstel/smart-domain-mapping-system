@@ -79,6 +79,11 @@ function dms_autoload( $class_name ) {
 		'DMS_Per_Domain_Menu'        => 'includes/per-domain/class-menu.php',
 		'DMS_Per_Domain_Language'    => 'includes/per-domain/class-language.php',
 		'DMS_Per_Domain_404'         => 'includes/per-domain/class-404.php',
+		// Phase 2C: Global mapping scopes.
+		'DMS_Global_Archive_Mapping' => 'includes/global/class-archive-mapping.php',
+		'DMS_Global_Page_Mapping'    => 'includes/global/class-page-mapping.php',
+		'DMS_Global_Product_Mapping' => 'includes/global/class-product-mapping.php',
+		'DMS_Global_Domain_Mapping'  => 'includes/global/class-domain-mapping.php',
 	);
 
 	if ( isset( $classes[ $class_name ] ) ) {
@@ -147,4 +152,10 @@ if ( DMS_Mode::is_single_site() ) {
 	DMS_Per_Domain_Menu::get_instance();
 	DMS_Per_Domain_Language::get_instance();
 	DMS_Per_Domain_404::get_instance();
+
+	// Phase 2C: Global mapping scopes (single-site mode only).
+	DMS_Global_Archive_Mapping::get_instance();
+	DMS_Global_Page_Mapping::get_instance();
+	DMS_Global_Product_Mapping::get_instance();
+	DMS_Global_Domain_Mapping::get_instance();
 }
