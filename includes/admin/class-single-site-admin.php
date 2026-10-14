@@ -45,7 +45,7 @@ final class DMS_Single_Site_Admin {
 		add_menu_page(
 			__( 'Domain Mappings', 'domain-mapping-system' ),
 			__( 'Domain Mappings', 'domain-mapping-system' ),
-			'manage_options',
+			DMS_CAP_MANAGE_MAPPINGS,
 			'dms-single-site',
 			array( $this, 'render_page' ),
 			'dashicons-admin-links',
@@ -59,7 +59,7 @@ final class DMS_Single_Site_Admin {
 	 * @return void
 	 */
 	public function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage domain mappings.', 'domain-mapping-system' ) );
 		}
 		require_once dirname( __DIR__, 2 ) . '/admin/views/single-site-mappings.php';
@@ -71,7 +71,7 @@ final class DMS_Single_Site_Admin {
 	 * @return void
 	 */
 	public function handle_add() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage domain mappings.', 'domain-mapping-system' ) );
 		}
 		check_admin_referer( 'dm_add_single_mapping' );
@@ -100,7 +100,7 @@ final class DMS_Single_Site_Admin {
 	 * @return void
 	 */
 	public function handle_delete() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage domain mappings.', 'domain-mapping-system' ) );
 		}
 		check_admin_referer( 'dm_delete_single_mapping' );

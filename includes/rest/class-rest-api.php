@@ -208,15 +208,15 @@ final class DMS_REST_API {
 	 * ------------------------------------------------------------------ */
 
 	public function can_manage_network() {
-		return current_user_can( 'manage_network' );
+		return dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS );
 	}
 
 	public function can_read_all() {
-		return current_user_can( 'manage_network' );
+		return dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS );
 	}
 
 	public function can_create( $request ) {
-		if ( current_user_can( 'manage_network' ) ) {
+		if ( dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			return true;
 		}
 		$blog_id = (int) $request->get_param( 'site_id' );
@@ -231,14 +231,14 @@ final class DMS_REST_API {
 		if ( is_wp_error( $mapping ) ) {
 			return $mapping;
 		}
-		if ( current_user_can( 'manage_network' ) ) {
+		if ( dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			return true;
 		}
 		return $this->can_manage_site( (int) $mapping['blog_id'] );
 	}
 
 	public function can_access_site( $request ) {
-		if ( current_user_can( 'manage_network' ) ) {
+		if ( dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS ) ) {
 			return true;
 		}
 		return $this->can_manage_site( (int) $request->get_param( 'site_id' ) );

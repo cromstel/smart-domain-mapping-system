@@ -392,7 +392,7 @@ final class DMS_REST_DMS {
 	 * @return bool
 	 */
 	public function can_manage() {
-		return current_user_can( 'manage_network' ) || current_user_can( 'manage_options' );
+		return dms_current_user_can( DMS_CAP_MANAGE_MAPPINGS );
 	}
 
 	/**

@@ -41,6 +41,12 @@ define( 'DMS_TABLE_LOGS', 'dm_audit_log' );
 define( 'DMS_TABLE_MAPPINGS', 'dm_mappings' );
 define( 'DMS_TABLE_VALUES', 'dm_mapping_values' );
 
+// Capability constants (Phase 3A: granular capabilities).
+define( 'DMS_CAP_MANAGE_MAPPINGS', 'manage_dms_mappings' );
+define( 'DMS_CAP_MANAGE_SETTINGS', 'manage_dms_settings' );
+define( 'DMS_CAP_MANAGE_REWRITES', 'manage_dms_rewrites' );
+define( 'DMS_CAP_VIEW_LOGS', 'view_dms_logs' );
+
 /**
  * Autoloads the plugin's DMS_* classes from includes/.
  *
@@ -53,49 +59,49 @@ define( 'DMS_TABLE_VALUES', 'dm_mapping_values' );
  */
 function dms_autoload( $class_name ) {
 	static $classes = array(
-		'DMS_DB_Tables'                  => 'includes/core/class-db-tables.php',
-		'DMS_Mapping_Engine'             => 'includes/core/class-mapping-engine.php',
-		'DMS_Mode'                       => 'includes/core/class-mode.php',
-		'DMS_Single_Site_Mappings'       => 'includes/core/class-single-site-mappings.php',
-		'DMS_Mapping_Values'             => 'includes/core/class-mapping-values.php',
-		'DMS_Logging'                    => 'includes/core/class-logging.php',
-		'DMS_Migration'                  => 'includes/core/class-migration.php',
-		'DMS_Plugin'                     => 'includes/core/class-domain-mapping-system.php',
-		'DMS_DNS_Verification'           => 'includes/verification/class-dns-verification.php',
-		'DMS_Health_Check'               => 'includes/verification/class-health-check.php',
-		'DMS_SSL_Manager'                => 'includes/ssl/class-ssl-manager.php',
-		'DMS_SSL_Provider_Interface'     => 'includes/ssl/class-ssl-provider-interface.php',
-		'DMS_SSL_Provider_None'          => 'includes/ssl/class-ssl-provider-none.php',
-		'DMS_SSL_Provider_Hosting'       => 'includes/ssl/class-ssl-provider-hosting.php',
-		'DMS_SSL_Provider_ACME'          => 'includes/ssl/class-ssl-provider-acme.php',
-		'DMS_SSL_Providers'              => 'includes/ssl/class-ssl-providers.php',
-		'DMS_Settings'                   => 'includes/admin/class-settings.php',
-		'DMS_Single_Site_Admin'          => 'includes/admin/class-single-site-admin.php',
-		'DMS_REST_API'                   => 'includes/rest/class-rest-api.php',
-		'DMS_REST_DMS'                   => 'includes/rest/class-rest-dms.php',
+		'DMS_DB_Tables'                => 'includes/core/class-db-tables.php',
+		'DMS_Mapping_Engine'           => 'includes/core/class-mapping-engine.php',
+		'DMS_Mode'                     => 'includes/core/class-mode.php',
+		'DMS_Single_Site_Mappings'     => 'includes/core/class-single-site-mappings.php',
+		'DMS_Mapping_Values'           => 'includes/core/class-mapping-values.php',
+		'DMS_Logging'                  => 'includes/core/class-logging.php',
+		'DMS_Migration'                => 'includes/core/class-migration.php',
+		'DMS_Plugin'                   => 'includes/core/class-domain-mapping-system.php',
+		'DMS_DNS_Verification'         => 'includes/verification/class-dns-verification.php',
+		'DMS_Health_Check'             => 'includes/verification/class-health-check.php',
+		'DMS_SSL_Manager'              => 'includes/ssl/class-ssl-manager.php',
+		'DMS_SSL_Provider_Interface'   => 'includes/ssl/class-ssl-provider-interface.php',
+		'DMS_SSL_Provider_None'        => 'includes/ssl/class-ssl-provider-none.php',
+		'DMS_SSL_Provider_Hosting'     => 'includes/ssl/class-ssl-provider-hosting.php',
+		'DMS_SSL_Provider_ACME'        => 'includes/ssl/class-ssl-provider-acme.php',
+		'DMS_SSL_Providers'            => 'includes/ssl/class-ssl-providers.php',
+		'DMS_Settings'                 => 'includes/admin/class-settings.php',
+		'DMS_Single_Site_Admin'        => 'includes/admin/class-single-site-admin.php',
+		'DMS_REST_API'                 => 'includes/rest/class-rest-api.php',
+		'DMS_REST_DMS'                 => 'includes/rest/class-rest-dms.php',
 		// Phase 2B: Per-domain customization.
-		'DMS_Per_Domain_Custom_Code'     => 'includes/per-domain/class-custom-code.php',
-		'DMS_Per_Domain_Favicon'         => 'includes/per-domain/class-favicon.php',
-		'DMS_Per_Domain_Menu'            => 'includes/per-domain/class-menu.php',
-		'DMS_Per_Domain_Language'        => 'includes/per-domain/class-language.php',
-		'DMS_Per_Domain_404'             => 'includes/per-domain/class-404.php',
+		'DMS_Per_Domain_Custom_Code'   => 'includes/per-domain/class-custom-code.php',
+		'DMS_Per_Domain_Favicon'       => 'includes/per-domain/class-favicon.php',
+		'DMS_Per_Domain_Menu'          => 'includes/per-domain/class-menu.php',
+		'DMS_Per_Domain_Language'      => 'includes/per-domain/class-language.php',
+		'DMS_Per_Domain_404'           => 'includes/per-domain/class-404.php',
 		// Phase 2C: Global mapping scopes.
-		'DMS_Global_Archive_Mapping'     => 'includes/global/class-archive-mapping.php',
-		'DMS_Global_Page_Mapping'        => 'includes/global/class-page-mapping.php',
-		'DMS_Global_Product_Mapping'     => 'includes/global/class-product-mapping.php',
-		'DMS_Global_Domain_Mapping'      => 'includes/global/class-domain-mapping.php',
+		'DMS_Global_Archive_Mapping'   => 'includes/global/class-archive-mapping.php',
+		'DMS_Global_Page_Mapping'      => 'includes/global/class-page-mapping.php',
+		'DMS_Global_Product_Mapping'   => 'includes/global/class-product-mapping.php',
+		'DMS_Global_Domain_Mapping'    => 'includes/global/class-domain-mapping.php',
 		// Phase 2D: Rewrite engine.
-		'DMS_Rewrite_Engine'             => 'includes/rewrite/class-rewrite-engine.php',
+		'DMS_Rewrite_Engine'           => 'includes/rewrite/class-rewrite-engine.php',
 		// Phase 2E: Auth & integrations.
-		'DMS_Alias_Auth'                 => 'includes/auth/class-alias-auth.php',
-		'DMS_Subdomain_Auth'             => 'includes/auth/class-subdomain-auth.php',
-		'DMS_Integration_Guard'          => 'includes/integrations/class-integration-guard.php',
-		'DMS_Integration_Yoast'          => 'includes/integrations/class-yoast.php',
-		'DMS_Integration_Cache'          => 'includes/integrations/class-cache.php',
-		'DMS_Integration_Multilingual'   => 'includes/integrations/class-multilingual.php',
-		'DMS_Integration_Borlabs'        => 'includes/integrations/class-borlabs.php',
-		'DMS_Integration_MDM'            => 'includes/integrations/class-mdm.php',
-		'DMS_Integrations'               => 'includes/integrations/class-integrations.php',
+		'DMS_Alias_Auth'               => 'includes/auth/class-alias-auth.php',
+		'DMS_Subdomain_Auth'           => 'includes/auth/class-subdomain-auth.php',
+		'DMS_Integration_Guard'        => 'includes/integrations/class-integration-guard.php',
+		'DMS_Integration_Yoast'        => 'includes/integrations/class-yoast.php',
+		'DMS_Integration_Cache'        => 'includes/integrations/class-cache.php',
+		'DMS_Integration_Multilingual' => 'includes/integrations/class-multilingual.php',
+		'DMS_Integration_Borlabs'      => 'includes/integrations/class-borlabs.php',
+		'DMS_Integration_MDM'          => 'includes/integrations/class-mdm.php',
+		'DMS_Integrations'             => 'includes/integrations/class-integrations.php',
 	);
 
 	if ( isset( $classes[ $class_name ] ) ) {
@@ -146,6 +152,54 @@ function dm_uninstall() {
 }
 
 register_uninstall_hook( DMS_PLUGIN_FILE, 'dm_uninstall' );
+
+/**
+ * Capability system (Phase 3A: granular capabilities).
+ *
+ * Maps DMS capabilities to WordPress roles. Can be filtered via 'dms_capabilities'.
+ *
+ * @return array Capability => role mapping.
+ */
+function dms_get_capabilities() {
+	$caps = array(
+		DMS_CAP_MANAGE_MAPPINGS => 'manage_network',
+		DMS_CAP_MANAGE_SETTINGS => 'manage_network',
+		DMS_CAP_MANAGE_REWRITES => 'manage_network',
+		DMS_CAP_VIEW_LOGS       => 'manage_network',
+	);
+
+	// In single-site mode, map to manage_options for site admins.
+	if ( DMS_Mode::is_single_site() ) {
+		$caps = array(
+			DMS_CAP_MANAGE_MAPPINGS => 'manage_options',
+			DMS_CAP_MANAGE_SETTINGS => 'manage_options',
+			DMS_CAP_MANAGE_REWRITES => 'manage_options',
+			DMS_CAP_VIEW_LOGS       => 'manage_options',
+		);
+	}
+
+	/**
+	 * Filters the DMS capability to role mapping.
+	 *
+	 * @param array $caps Capability => role mapping.
+	 * @return array Filtered mapping.
+	 */
+	return apply_filters( 'dms_capabilities', $caps );
+}
+
+/**
+ * Checks if current user has a DMS capability.
+ *
+ * @param string $cap Capability key (e.g., 'manage_dms_mappings').
+ * @return bool
+ */
+function dms_current_user_can( $cap ) {
+	$role = dms_get_capabilities()[ $cap ] ?? false;
+	if ( false === $role ) {
+		return false;
+	}
+	return current_user_can( $role );
+}
 
 /**
  * Phase 2D: Installs the rewrite engine mu-plugins drop-in.
