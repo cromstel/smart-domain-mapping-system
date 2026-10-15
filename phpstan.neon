@@ -1,0 +1,20 @@
+includes:
+    - vendor/phpstan/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - includes
+        - admin
+        - public
+        - domain-mapping-system.php
+    excludePaths:
+        - includes/rest/class-rest-dms.php
+    checkMissingIterableValueType: false
+    checkGenericClassAsArrayAccess: false
+    ignoreErrors:
+        - '#Call to an undefined method WP_REST_Request::get_param\(\)#'
+        - '#Access to an undefined property WP_REST_Request::\$#'
+        - '#Function wp_rand\(\) not found#'
+    treatPhpDocTypesAsCertain: true
+    checkMissingReturnType: true

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://getpsalm.org/schema/config.xsd"
+>
+    <projectFiles>
+        <directory name="includes" />
+        <directory name="admin" />
+        <directory name="public" />
+        <file name="domain-mapping-system.php" />
+    </projectFiles>
+
+    <excludeFiles>
+        <file name="includes/rest/class-rest-dms.php" />
+    </excludeFiles>
+
+    <issueHandlers>
+        <MissingMethod returnType="false" />
+        <UndefinedClass property="false" method="false" />
+        <UndefinedFunction function="false" />
+        <UndefinedVariable variable="false" />
+        <MissingReturnType returnType="false" />
+        <MixedAssignment mixedAssignment="false" />
+        <MixedReturnStatement mixedReturn="false" />
+        <MixedPropertyType mixedProperty="false" />
+        <PossiblyNullReference reference="false" />
+    </issueHandlers>
+
+    <plugins>
+        <pluginClass class="Psalm\WordPress\Plugin" />
+    </plugins>
+</psalm>
