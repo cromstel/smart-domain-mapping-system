@@ -311,7 +311,7 @@ final class DMS_Mapping_Engine {
 	/**
 	 * Lists mappings.
 	 *
-	 * @param array $where Optional filters: blog_id, domain.
+	 * @param array $where Optional filters: blog_id, domain, limit, offset.
 	 * @return array|WP_Error List of mapping arrays.
 	 */
 	public static function list_mappings( array $where = array() ) {
@@ -336,6 +336,15 @@ final class DMS_Mapping_Engine {
 			$params[] = $key;
 		}
 		$sql .= ' ORDER BY meta_id ASC';
+
+		$limit  = isset( $where['limit'] ) ? min( absint( $where['limit'] ), 500 ) : 100;
+		$offset = isset( $where['offset'] ) ? max( absint( $where['offset'] ), 0 ) : 0;
+		if ( $limit < 1 ) {
+			$limit = 100;
+		}
+		$sql     .= ' LIMIT %d OFFSET %d';
+		$params[] = $limit;
+		$params[] = $offset;
 
 		// $sql is assembled from fixed fragments; all values are bound via prepare().
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -380,6 +389,43 @@ final class DMS_Mapping_Engine {
 		unset( $mapping );
 
 		return $mappings;
+	}
+
+	/**
+	 * Counts mappings for pagination.
+	 *
+	 * @param array $where Optional filters: blog_id, domain.
+	 * @return int|WP_Error Total count.
+	 */
+	public static function count_mappings( array $where = array() ) {
+		global $wpdb;
+
+		$sql    = "SELECT COUNT(*) FROM {$wpdb->sitemeta} WHERE site_id = %d AND meta_key LIKE %s";
+		$params = array(
+			get_current_network_id(),
+			$wpdb->esc_like( self::META_PREFIX ) . '%',
+		);
+
+		if ( ! empty( $where['blog_id'] ) ) {
+			$sql     .= ' AND meta_value = %s';
+			$params[] = (string) absint( $where['blog_id'] );
+		}
+		if ( ! empty( $where['domain'] ) ) {
+			$key = self::meta_key_for( $where['domain'] );
+			if ( null === $key ) {
+				return 0;
+			}
+			$sql     .= ' AND meta_key = %s';
+			$params[] = $key;
+		}
+
+		// $sql is assembled from fixed fragments; all values are bound via prepare().
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$count = $wpdb->get_var( $wpdb->prepare( $sql, ...$params ) );
+		if ( $wpdb->last_error ) {
+			return new WP_Error( 'dm_query_failed', 'Mapping count query failed.', array( 'status' => 500 ) );
+		}
+		return (int) $count;
 	}
 
 	/**

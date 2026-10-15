@@ -397,7 +397,8 @@ final class DMS_Single_Site_Mappings {
 	 * Lists mappings.
 	 *
 	 * @param array $where Optional filters: status (active|inactive), verified
-	 *                     (0|1), host (exact), limit (default 100, max 500).
+	 *                     (0|1), host (exact), limit (default 100, max 500),
+	 *                     offset (default 0).
 	 * @return array|WP_Error
 	 */
 	public static function list_mappings( array $where = array() ) {
@@ -424,12 +425,14 @@ final class DMS_Single_Site_Mappings {
 			$params[] = (int) (bool) $where['verified'];
 		}
 
-		$limit = isset( $where['limit'] ) ? min( absint( $where['limit'] ), 500 ) : 100;
+		$limit  = isset( $where['limit'] ) ? min( absint( $where['limit'] ), 500 ) : 100;
+		$offset = isset( $where['offset'] ) ? max( absint( $where['offset'] ), 0 ) : 0;
 		if ( $limit < 1 ) {
 			$limit = 100;
 		}
-		$sql     .= ' ORDER BY id ASC LIMIT %d';
+		$sql     .= ' ORDER BY id ASC LIMIT %d OFFSET %d';
 		$params[] = $limit;
+		$params[] = $offset;
 
 		// $sql is assembled from fixed fragments; values are bound via prepare().
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- fragment assembly, values bound.
@@ -442,6 +445,45 @@ final class DMS_Single_Site_Mappings {
 			$mappings[] = self::decorate( $row );
 		}
 		return $mappings;
+	}
+
+	/**
+	 * Counts mappings for pagination.
+	 *
+	 * @param array $where Optional filters: status (active|inactive), verified (0|1), host (exact).
+	 * @return int|WP_Error Total count.
+	 */
+	public static function count_mappings( array $where = array() ) {
+		global $wpdb;
+
+		$sql    = 'SELECT COUNT(*) FROM ' . self::table() . ' WHERE 1=1'; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table name.
+		$params = array();
+
+		if ( ! empty( $where['host'] ) ) {
+			$host = self::normalize_host( $where['host'] );
+			if ( false === $host ) {
+				return 0;
+			}
+			$sql     .= ' AND host = %s';
+			$params[] = $host;
+		}
+		if ( isset( $where['status'] ) && 'active' === $where['status'] ) {
+			$sql .= ' AND active = 1';
+		} elseif ( isset( $where['status'] ) && 'inactive' === $where['status'] ) {
+			$sql .= ' AND active = 0';
+		}
+		if ( isset( $where['verified'] ) ) {
+			$sql     .= ' AND verified = %d';
+			$params[] = (int) (bool) $where['verified'];
+		}
+
+		// $sql is assembled from fixed fragments; values are bound via prepare().
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- fragment assembly, values bound.
+		$count = $wpdb->get_var( $wpdb->prepare( $sql, ...$params ) );
+		if ( $wpdb->last_error ) {
+			return new WP_Error( 'dms_query_failed', __( 'Mapping count query failed.', 'domain-mapping-system' ), array( 'status' => 500 ) );
+		}
+		return (int) $count;
 	}
 
 	/**

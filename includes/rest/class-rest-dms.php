@@ -493,6 +493,8 @@ final class DMS_REST_DMS {
 		if ( ! $site ) {
 			$site = (int) $request->get_param( 'blog_id' );
 		}
+		$page     = max( 1, (int) $request->get_param( 'page' ) );
+		$per_page = min( max( 1, (int) $request->get_param( 'per_page' ) ), 100 );
 
 		if ( DMS_Mode::is_multisite() ) {
 			$where  = array();
@@ -503,6 +505,17 @@ final class DMS_REST_DMS {
 			if ( $needle ) {
 				$where['domain'] = $needle;
 			}
+			$where['limit']  = $per_page;
+			$where['offset'] = ( $page - 1 ) * $per_page;
+
+			// Get total count for pagination headers.
+			$count_where = $where;
+			unset( $count_where['limit'], $count_where['offset'] );
+			$total = DMS_Mapping_Engine::count_mappings( $count_where );
+			if ( is_wp_error( $total ) ) {
+				$total = 0;
+			}
+
 			$mappings = DMS_Mapping_Engine::list_mappings( $where );
 			if ( is_wp_error( $mappings ) ) {
 				return $mappings;
@@ -526,7 +539,11 @@ final class DMS_REST_DMS {
 					)
 				);
 			}
-			return rest_ensure_response( $mappings );
+			$response = rest_ensure_response( $mappings );
+			$response->header( 'X-WP-Total', (int) $total );
+			$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
+			$this->add_link_header( $response, $page, $per_page, $total );
+			return $response;
 		}
 
 		$where = array();
@@ -541,8 +558,23 @@ final class DMS_REST_DMS {
 		if ( 'verified' === $status ) {
 			$where['verified'] = 1;
 		}
+		$where['limit']  = $per_page;
+		$where['offset'] = ( $page - 1 ) * $per_page;
+
+		// Get total count for pagination headers.
+		$count_where = $where;
+		unset( $count_where['limit'], $count_where['offset'] );
+		$total = DMS_Single_Site_Mappings::count_mappings( $count_where );
+		if ( is_wp_error( $total ) ) {
+			$total = 0;
+		}
+
 		$mappings = DMS_Single_Site_Mappings::list_mappings( $where );
-		return rest_ensure_response( $mappings );
+		$response = rest_ensure_response( $mappings );
+		$response->header( 'X-WP-Total', (int) $total );
+		$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
+		$this->add_link_header( $response, $page, $per_page, $total );
+		return $response;
 	}
 
 	/**
@@ -1063,5 +1095,59 @@ final class DMS_REST_DMS {
 				'value' => $updated[ $field ] ?? null,
 			)
 		);
+	}
+	/**
+	 * Adds Link header for pagination (RFC 5988).
+	 *
+	 * @param WP_REST_Response $response Response object.
+	 * @param int              $page     Current page.
+	 * @param int              $per_page Items per page.
+	 * @param int              $total    Total items.
+	 * @return void
+	 */
+	private function add_link_header( $response, int $page, int $per_page, int $total ) {
+		$base_url    = rest_url( 'dms/v1/mappings' );
+		$total_pages = (int) ceil( $total / $per_page );
+
+		$links = array();
+
+		if ( $page > 1 ) {
+			$prev_page = $page - 1;
+			$links[]   = '<' . add_query_arg(
+				array(
+					'page'     => $prev_page,
+					'per_page' => $per_page,
+				),
+				$base_url
+			) . '>; rel="prev"';
+		}
+		if ( $page < $total_pages ) {
+			$next_page = $page + 1;
+			$links[]   = '<' . add_query_arg(
+				array(
+					'page'     => $next_page,
+					'per_page' => $per_page,
+				),
+				$base_url
+			) . '>; rel="next"';
+		}
+		$links[] = '<' . add_query_arg(
+			array(
+				'page'     => 1,
+				'per_page' => $per_page,
+			),
+			$base_url
+		) . '>; rel="first"';
+		$links[] = '<' . add_query_arg(
+			array(
+				'page'     => $total_pages,
+				'per_page' => $per_page,
+			),
+			$base_url
+		) . '>; rel="last"';
+
+		if ( ! empty( $links ) ) {
+			$response->header( 'Link', implode( ', ', $links ) );
+		}
 	}
 }
