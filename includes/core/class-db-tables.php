@@ -88,7 +88,9 @@ class DMS_DB_Tables {
 			PRIMARY KEY (id),
 			UNIQUE KEY host_path (host, path),
 			KEY active (active),
-			KEY verified (verified)
+			KEY verified (verified),
+			KEY host_active (host, active),
+			KEY host_verified (host, verified)
 		) {$charset_collate};";
 
 		$sql5 = "CREATE TABLE $values_table (
@@ -96,12 +98,14 @@ class DMS_DB_Tables {
 			mapping_id bigint(20) unsigned NOT NULL,
 			object_type varchar(32) NOT NULL,
 			object_id bigint(20) unsigned NOT NULL,
+			host varchar(255) NOT NULL DEFAULT '',
 			`primary` tinyint(1) NOT NULL DEFAULT 0,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			UNIQUE KEY mapping_object (mapping_id, object_type, object_id),
 			KEY object (object_type, object_id),
-			KEY mapping_id (mapping_id)
+			KEY mapping_id (mapping_id),
+			KEY host (host)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -152,5 +156,18 @@ class DMS_DB_Tables {
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table/column names.
 			$wpdb->query( $sql );
 		}
+
+		// Run Phase 4 performance migration (indexes + denormalized host).
+		self::run_migration_4();
+	}
+
+	/**
+	 * Runs Phase 4 performance migration (indexes + denormalized host).
+	 * Called during schema upgrade when DMS_DB_VERSION >= 4.
+	 *
+	 * @return void
+	 */
+	public static function run_migration_4() {
+		require_once DMS_PLUGIN_DIR . '/database/migrations/4_performance_indexes.php';
 	}
 }
