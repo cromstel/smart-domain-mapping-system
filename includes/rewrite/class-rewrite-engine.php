@@ -291,4 +291,54 @@ final class DMS_Rewrite_Engine {
 		$_GET                    = $query;
 		$_SERVER['QUERY_STRING'] = http_build_query( $query );
 	}
+
+	/**
+	 * Pre-loads rewrite rules for all active hosts.
+	 * Called when mappings are saved/updated to warm the cache.
+	 *
+	 * @return void
+	 */
+	public static function preload_all_rules(): void {
+		if ( ! class_exists( 'DMS_Single_Site_Mappings' ) ) {
+			return;
+		}
+
+		$mappings = DMS_Single_Site_Mappings::list_mappings( array( 'status' => 'active' ) );
+		if ( is_wp_error( $mappings ) || empty( $mappings ) ) {
+			return;
+		}
+
+		$cache = array();
+		foreach ( $mappings as $mapping ) {
+			$rules = array();
+
+			// Path rewrite rules.
+			if ( ! empty( $mapping['rewrite_rules'] ) && is_array( $mapping['rewrite_rules'] ) ) {
+				foreach ( $mapping['rewrite_rules'] as $rule ) {
+					$rule = self::normalize_rewrite_rule( $rule, $mapping );
+					if ( $rule ) {
+						$rules['rewrite'][] = $rule;
+					}
+				}
+			}
+
+			// Query string rules.
+			if ( ! empty( $mapping['query_string_rules'] ) && is_array( $mapping['query_string_rules'] ) ) {
+				foreach ( $mapping['query_string_rules'] as $rule ) {
+					$rule = self::normalize_query_rule( $rule, $mapping );
+					if ( $rule ) {
+						$rules['query'][] = $rule;
+					}
+				}
+			}
+
+			// Sort by priority.
+			usort( $rules['rewrite'] ?? array(), array( __CLASS__, 'sort_rules' ) );
+			usort( $rules['query'] ?? array(), array( __CLASS__, 'sort_rules' ) );
+
+			$cache[ $mapping['host'] ] = $rules;
+		}
+
+		wp_cache_set( self::CACHE_KEY, $cache, self::CACHE_GROUP, HOUR_IN_SECONDS );
+	}
 }

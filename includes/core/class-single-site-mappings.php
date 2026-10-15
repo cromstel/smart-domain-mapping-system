@@ -316,6 +316,12 @@ final class DMS_Single_Site_Mappings {
 
 		$mapping_id = (int) $wpdb->insert_id;
 		self::cache_mapping( self::get_mapping_row( $mapping_id ) );
+
+		// Pre-load rewrite rules for all active hosts.
+		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
+			DMS_Rewrite_Engine::preload_all_rules();
+		}
+
 		return $mapping_id;
 	}
 
@@ -597,6 +603,12 @@ final class DMS_Single_Site_Mappings {
 		}
 
 		self::cache_mapping( self::get_mapping_row( $mapping_id ) );
+
+		// Pre-load rewrite rules for all active hosts.
+		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
+			DMS_Rewrite_Engine::preload_all_rules();
+		}
+
 		return self::get_mapping( $mapping_id );
 	}
 
@@ -629,6 +641,12 @@ final class DMS_Single_Site_Mappings {
 
 		wp_cache_delete( 'ss_id_' . $mapping_id, self::CACHE_GROUP );
 		wp_cache_delete( 'ss_host_' . md5( $row['host'] . '|' . $row['path'] ), self::CACHE_GROUP );
+
+		// Clear rewrite engine cache for this host.
+		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
+			DMS_Rewrite_Engine::clear_cache( $row['host'] );
+		}
+
 		return true;
 	}
 
