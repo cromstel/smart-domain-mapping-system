@@ -79,12 +79,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		 * [--force]
 		 * : Regenerate the challenge even if one is pending (verify).
 		 *
+		 * [--dry-run]
+		 * : Show what would be done without making changes (add, enable, disable, remove, set-primary).
+		 *
 		 * ## EXAMPLES
 		 *
 		 *     wp dm mapping add example.org --site=3 --porcelain
 		 *     wp dm mapping list --format=json
 		 *     wp dm mapping verify 7 --method=dns
 		 *     wp dm mapping set-primary 7
+		 *     wp dm mapping add example.org --site=3 --dry-run
 		 *
 		 * @param array $args       Positional arguments.
 		 * @param array $assoc_args Associative arguments.
@@ -122,6 +126,20 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		}
 
 		private function cmd_add( $args, $assoc_args ) {
+			if ( ! empty( $assoc_args['dry-run'] ) ) {
+				$domain  = isset( $args[1] ) ? $args[1] : '';
+				$site_id = isset( $assoc_args['site'] ) ? absint( $assoc_args['site'] ) : 0;
+				WP_CLI::line(
+					sprintf(
+						'DRY RUN: Would add mapping "%s" to site %d%s.',
+						$domain,
+						$site_id,
+						! empty( $assoc_args['primary'] ) ? ' (primary)' : ''
+					)
+				);
+				return;
+			}
+
 			$domain = isset( $args[1] ) ? $args[1] : '';
 			if ( '' === $domain ) {
 				WP_CLI::error( 'Domain required. Usage: wp dm mapping add <domain> --site=<id>' );
@@ -169,6 +187,18 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		}
 
 		private function cmd_set_active( $args, $assoc_args, $active ) {
+			if ( ! empty( $assoc_args['dry-run'] ) ) {
+				$mapping_id = $this->resolve_id( $args, $assoc_args );
+				WP_CLI::line(
+					sprintf(
+						'DRY RUN: Would %s mapping #%d.',
+						$active ? 'enable' : 'disable',
+						$mapping_id
+					)
+				);
+				return;
+			}
+
 			$mapping_id = $this->resolve_id( $args, $assoc_args );
 			$result     = $active
 				? DMS_Mapping_Engine::enable_mapping( $mapping_id )
@@ -187,6 +217,12 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		}
 
 		private function cmd_delete( $args, $assoc_args ) {
+			if ( ! empty( $assoc_args['dry-run'] ) ) {
+				$mapping_id = $this->resolve_id( $args, $assoc_args );
+				WP_CLI::line( sprintf( 'DRY RUN: Would remove mapping #%d.', $mapping_id ) );
+				return;
+			}
+
 			$mapping_id = $this->resolve_id( $args, $assoc_args );
 			$result     = DMS_Mapping_Engine::remove_mapping( $mapping_id );
 			if ( is_wp_error( $result ) ) {
@@ -226,6 +262,12 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		}
 
 		private function cmd_set_primary( $args, $assoc_args ) {
+			if ( ! empty( $assoc_args['dry-run'] ) ) {
+				$mapping_id = $this->resolve_id( $args, $assoc_args );
+				WP_CLI::line( sprintf( 'DRY RUN: Would set mapping #%d as primary.', $mapping_id ) );
+				return;
+			}
+
 			$mapping_id = $this->resolve_id( $args, $assoc_args );
 			$result     = DMS_Mapping_Engine::set_primary( $mapping_id );
 			if ( is_wp_error( $result ) ) {
@@ -258,7 +300,6 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		 */
 		public function cert( $args, $assoc_args ) {
 			$this->check_permission();
-
 			$subcommand = isset( $args[0] ) ? sanitize_key( $args[0] ) : '';
 			$domain     = isset( $args[1] ) ? DMS_Mapping_Engine::normalize_domain( $args[1] ) : false;
 			if ( ! in_array( $subcommand, array( 'issue', 'renew' ), true ) ) {
