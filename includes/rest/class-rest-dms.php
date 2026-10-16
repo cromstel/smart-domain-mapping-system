@@ -199,10 +199,9 @@ final class DMS_REST_DMS {
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_boolean_or_null' ),
 						),
-						'verified'      => array(
-							'required'          => false,
-							'sanitize_callback' => array( $this, 'sanitize_boolean_or_null' ),
-						),
+						// 'verified' is not accepted here: only the DNS/HTTP
+						// verification flow sets it, so a client cannot mark a
+						// domain as proven without demonstrating control of it.
 						'primary'       => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_boolean_or_null' ),
@@ -505,42 +504,42 @@ final class DMS_REST_DMS {
 			if ( $needle ) {
 				$where['domain'] = $needle;
 			}
-			$where['limit']  = $per_page;
-			$where['offset'] = ( $page - 1 ) * $per_page;
+			// The multisite engine filters only on blog_id/domain in SQL, so a
+			// status filter cannot be pushed down. Pull the unpaginated set
+			// (500 is the engine's hard max), filter it, then paginate in PHP.
+			// Filtering an already-sliced page made X-WP-Total the unfiltered
+			// count and returned empty pages while matching rows still existed
+			// on another page.
+			$where['limit'] = 500;
 
-			// Get total count for pagination headers.
-			$count_where = $where;
-			unset( $count_where['limit'], $count_where['offset'] );
-			$total = DMS_Mapping_Engine::count_mappings( $count_where );
-			if ( is_wp_error( $total ) ) {
-				$total = 0;
-			}
-
-			$mappings = DMS_Mapping_Engine::list_mappings( $where );
-			if ( is_wp_error( $mappings ) ) {
-				return $mappings;
+			$all = DMS_Mapping_Engine::list_mappings( $where );
+			if ( is_wp_error( $all ) ) {
+				return $all;
 			}
 			if ( $status ) {
-				$mappings = array_values(
+				$all = array_values(
 					array_filter(
-						$mappings,
+						$all,
 						function ( $m ) use ( $status ) {
 							if ( 'active' === $status ) {
-								return $m['active'];
+								return ! empty( $m['active'] );
 							}
 							if ( 'inactive' === $status ) {
-								return ! $m['active'];
+								return empty( $m['active'] );
 							}
 							if ( 'verified' === $status ) {
-								return $m['verified'];
+								return ! empty( $m['verified'] );
 							}
 							return true;
 						}
 					)
 				);
 			}
+
+			$total    = count( $all );
+			$mappings = array_slice( $all, ( $page - 1 ) * $per_page, $per_page );
 			$response = rest_ensure_response( $mappings );
-			$response->header( 'X-WP-Total', (int) $total );
+			$response->header( 'X-WP-Total', $total );
 			$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
 			$this->add_link_header( $response, $page, $per_page, $total );
 			return $response;
@@ -658,8 +657,11 @@ final class DMS_REST_DMS {
 			return rest_ensure_response( $updated );
 		}
 
+		// 'verified' is deliberately excluded: only the DNS/HTTP verification
+		// flow may set it, so a client cannot mark a domain as proven without
+		// demonstrating control of it.
 		$fields = array();
-		foreach ( array( 'host', 'path', 'attachment_id', 'custom_html', 'active', 'verified', 'primary' ) as $key ) {
+		foreach ( array( 'host', 'path', 'attachment_id', 'custom_html', 'active', 'primary' ) as $key ) {
 			$value = $request->get_param( $key );
 			if ( null !== $value ) {
 				$fields[ $key ] = $value;
@@ -944,8 +946,9 @@ final class DMS_REST_DMS {
 			return DMS_Mapping_Engine::update_mapping( $mapping_id, $active, $make_primary );
 		}
 
+		// 'verified' is excluded here too, for the same reason as update_mapping().
 		$fields = array();
-		foreach ( array( 'host', 'path', 'attachment_id', 'custom_html', 'active', 'verified', 'primary' ) as $key ) {
+		foreach ( array( 'host', 'path', 'attachment_id', 'custom_html', 'active', 'primary' ) as $key ) {
 			if ( array_key_exists( $key, $item ) ) {
 				$fields[ $key ] = $item[ $key ];
 			}
