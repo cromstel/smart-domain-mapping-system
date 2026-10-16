@@ -46,10 +46,11 @@ final class DMS_Subdomain_Auth {
 			return;
 		}
 
-		// Define COOKIE_DOMAIN early (before pluggable.php loads).
+		// COOKIE_DOMAIN is deliberately not touched here. See
+		// define_cookie_domain() for why the plugin cannot set it safely.
 		add_action( 'plugins_loaded', array( $this, 'define_cookie_domain' ), 0 );
 
-		// Update auth cookie constants to use shared domain.
+		// Update auth cookie paths to use shared domain.
 		add_action( 'init', array( $this, 'update_auth_cookie_constants' ), 1 );
 	}
 
@@ -90,6 +91,12 @@ final class DMS_Subdomain_Auth {
 	/**
 	 * Extracts the parent domain (e.g., example.com from sub.example.com).
 	 *
+	 * Returns false when the remainder would be a registry suffix such as
+	 * co.uk or com.au. A host like example.co.uk would otherwise yield a
+	 * parent of co.uk, and a cookie scoped to Domain=.co.uk is rejected by
+	 * every browser under the public suffix rule - and would be shared with
+	 * every unrelated site on that suffix if it were honoured.
+	 *
 	 * @param string $host Full hostname.
 	 * @return string|false Parent domain or false.
 	 */
@@ -101,29 +108,63 @@ final class DMS_Subdomain_Auth {
 
 		// Join all but the first part.
 		array_shift( $parts );
-		return implode( '.', $parts );
+		$parent = implode( '.', $parts );
+
+		// Reject two-label registry suffixes (co.uk, com.au, or.jp, ...). A full
+		// public suffix list would be better; this catches the common cases
+		// rather than silently scoping a cookie to a shared registry domain.
+		if ( 1 === preg_match( '/^(ac|co|com|edu|gov|mil|net|nom|org)\.[a-z]{2}$/i', $parent ) ) {
+			return false;
+		}
+
+		return $parent;
 	}
 
 	/**
-	 * Defines COOKIE_DOMAIN constant for WordPress.
-	 * Must run before pluggable.php loads.
+	 * Warns when COOKIE_DOMAIN has not been set by the operator.
+	 *
+	 * This deliberately does not define COOKIE_DOMAIN itself. It would be
+	 * defined on plugins_loaded, which is long after wp-settings.php has
+	 * established the cookie layout (pluggable.php is loaded *before* plugins
+	 * are loaded, not after), and its value would be derived from the mappings
+	 * table at request time - so the domain a cookie was written with could
+	 * differ from the one it is read back under once a mapping changes.
+	 * COOKIE_DOMAIN belongs in wp-config.php, above the site URL, where it is
+	 * stable and set before WordPress touches any cookie.
 	 *
 	 * @return void
 	 */
 	public function define_cookie_domain() {
+		if ( defined( 'COOKIE_DOMAIN' ) ) {
+			return;
+		}
+
 		$parent_domain = $this->get_shared_parent_domain();
 		if ( ! $parent_domain ) {
 			return;
 		}
 
-		// Only define if not already defined.
-		if ( ! defined( 'COOKIE_DOMAIN' ) ) {
-			define( 'COOKIE_DOMAIN', '.' . $parent_domain );
-		}
+		_doing_it_wrong(
+			'DMS_Subdomain_Auth',
+			esc_html(
+				sprintf(
+					// translators: %s: shared parent domain, e.g. ".example.com".
+					__( 'Shared subdomain auth needs a stable cookie domain. Define COOKIE_DOMAIN as %s in wp-config.php, above the site URL.', 'domain-mapping-system' ),
+					'.' . $parent_domain
+				)
+			),
+			'1.2.0'
+		);
 	}
 
 	/**
-	 * Updates auth cookie constants to use shared domain.
+	 * Normalises the auth cookie paths so a shared-domain cookie is sent
+	 * across the whole site rather than only under the current path.
+	 *
+	 * These are read at setcookie() time, so defining them here does affect
+	 * cookies written later in the request (e.g. during login). COOKIE_DOMAIN
+	 * is the one that cannot be set reliably from here - see
+	 * define_cookie_domain().
 	 *
 	 * @return void
 	 */
@@ -133,9 +174,8 @@ final class DMS_Subdomain_Auth {
 			return;
 		}
 
-		// WordPress uses these constants for cookie names/paths.
-		// We can't redefine them after they're defined, but we can ensure
-		// the cookie domain is set correctly for future cookie operations.
+		// WordPress derives these from the site URL in wp-settings.php. Guarded
+		// so an operator who set them in wp-config.php keeps their value.
 		if ( ! defined( 'COOKIEPATH' ) ) {
 			define( 'COOKIEPATH', '/' );
 		}
