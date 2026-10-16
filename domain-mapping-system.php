@@ -278,4 +278,14 @@ if ( DMS_Mode::is_single_site() ) {
 	DMS_Global_Page_Mapping::get_instance();
 	DMS_Global_Product_Mapping::get_instance();
 	DMS_Global_Domain_Mapping::get_instance();
+
+	// Feature integrations (Yoast, caching plugins, multilingual, Borlabs,
+	// MDM) and cross-domain auth. Without these the cache integration never
+	// registers its dms_mapping_* listeners, so nothing purged page caches when
+	// a mapping changed. Both auth classes are opt-in via filters that default
+	// to false, so instantiating them changes no behaviour until a site turns
+	// them on.
+	DMS_Integrations::get_instance();
+	DMS_Alias_Auth::get_instance();
+	DMS_Subdomain_Auth::get_instance();
 }

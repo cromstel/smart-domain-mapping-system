@@ -74,6 +74,35 @@ final class DMS_Mapping_Values {
 	}
 
 	/**
+	 * Fires dms_mapping_value_updated for a mapping, resolving the host so
+	 * listeners receive the same ( $mapping_id, $host ) pair the mapping-level
+	 * hooks pass.
+	 *
+	 * The mapping may already be gone (e.g. a value removed during a cascade),
+	 * so a missing mapping is not an error — an empty host is passed instead.
+	 *
+	 * @param int $mapping_id Mapping the value belongs to.
+	 * @return void
+	 */
+	private static function notify_value_updated( int $mapping_id ) {
+		$host = '';
+		if ( class_exists( 'DMS_Single_Site_Mappings' ) ) {
+			$mapping = DMS_Single_Site_Mappings::get_mapping( $mapping_id );
+			if ( is_array( $mapping ) && isset( $mapping['host'] ) ) {
+				$host = (string) $mapping['host'];
+			}
+		}
+
+		/**
+		 * Fires after a mapping value is written or removed.
+		 *
+		 * @param int    $mapping_id Mapping the value belongs to.
+		 * @param string $host       Host the mapping points at.
+		 */
+		do_action( 'dms_mapping_value_updated', $mapping_id, $host );
+	}
+
+	/**
 	 * Sets (upserts) a mapping value.
 	 *
 	 * @param int    $mapping_id  Mapping ID (must exist).
@@ -117,6 +146,7 @@ final class DMS_Mapping_Values {
 				return new WP_Error( 'dms_value_update_failed', __( 'Could not update the mapping value.', 'domain-mapping-system' ), array( 'status' => 500 ) );
 			}
 			wp_cache_delete( 'ss_val_' . (int) $existing, self::CACHE_GROUP );
+			self::notify_value_updated( $mapping_id );
 			return (int) $existing;
 		}
 
@@ -134,6 +164,7 @@ final class DMS_Mapping_Values {
 		if ( false === $inserted || ! $wpdb->insert_id ) {
 			return new WP_Error( 'dms_value_insert_failed', __( 'Could not store the mapping value.', 'domain-mapping-system' ), array( 'status' => 500 ) );
 		}
+		self::notify_value_updated( $mapping_id );
 		return (int) $wpdb->insert_id;
 	}
 
@@ -146,7 +177,8 @@ final class DMS_Mapping_Values {
 	 */
 	public static function set_primary( int $value_id, bool $primary ) {
 		global $wpdb;
-		if ( null === self::get_value( $value_id ) ) {
+		$value = self::get_value( $value_id );
+		if ( null === $value ) {
 			return new WP_Error( 'dms_value_not_found', __( 'Mapping value not found.', 'domain-mapping-system' ), array( 'status' => 404 ) );
 		}
 		$updated = $wpdb->update(
@@ -160,6 +192,7 @@ final class DMS_Mapping_Values {
 			return new WP_Error( 'dms_value_update_failed', __( 'Could not update the mapping value.', 'domain-mapping-system' ), array( 'status' => 500 ) );
 		}
 		wp_cache_delete( 'ss_val_' . $value_id, self::CACHE_GROUP );
+		self::notify_value_updated( (int) $value['mapping_id'] );
 		return true;
 	}
 
@@ -171,7 +204,8 @@ final class DMS_Mapping_Values {
 	 */
 	public static function remove_value( int $value_id ) {
 		global $wpdb;
-		if ( null === self::get_value( $value_id ) ) {
+		$value = self::get_value( $value_id );
+		if ( null === $value ) {
 			return new WP_Error( 'dms_value_not_found', __( 'Mapping value not found.', 'domain-mapping-system' ), array( 'status' => 404 ) );
 		}
 		$deleted = $wpdb->delete(
@@ -183,6 +217,7 @@ final class DMS_Mapping_Values {
 			return new WP_Error( 'dms_value_delete_failed', __( 'Could not remove the mapping value.', 'domain-mapping-system' ), array( 'status' => 500 ) );
 		}
 		wp_cache_delete( 'ss_val_' . $value_id, self::CACHE_GROUP );
+		self::notify_value_updated( (int) $value['mapping_id'] );
 		return true;
 	}
 

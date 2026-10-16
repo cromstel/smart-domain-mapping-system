@@ -317,6 +317,17 @@ final class DMS_Single_Site_Mappings {
 		$mapping_id = (int) $wpdb->insert_id;
 		self::cache_mapping( self::get_mapping_row( $mapping_id ) );
 
+		/**
+		 * Fires after a mapping is created or updated, so integrations can purge
+		 * page caches (DMS_Integration_Cache) and the rewrite engine can drop the
+		 * cached rules for that host (dms_rewrite_clear_cache). Fired before
+		 * preload_all_rules() so the rebuild below is the last writer.
+		 *
+		 * @param int    $mapping_id Mapping ID.
+		 * @param string $host       Normalized host the mapping points at.
+		 */
+		do_action( 'dms_mapping_updated', $mapping_id, $host );
+
 		// Pre-load rewrite rules for all active hosts.
 		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
 			DMS_Rewrite_Engine::preload_all_rules();
@@ -602,7 +613,27 @@ final class DMS_Single_Site_Mappings {
 			return new WP_Error( 'dms_update_failed', __( 'Could not update the mapping.', 'domain-mapping-system' ), array( 'status' => 500 ) );
 		}
 
+		// Drop both cache keys before re-reading. The cached row is pre-update,
+		// so cache_mapping() on its own would pin the stale values, and a host
+		// or path change would leave the old ss_host_* entry behind, serving a
+		// mapping that no longer exists. get_mapping_row() re-reads from the
+		// database once the keys are gone.
+		wp_cache_delete( 'ss_id_' . $mapping_id, self::CACHE_GROUP );
+		wp_cache_delete( 'ss_host_' . md5( $row['host'] . '|' . $row['path'] ), self::CACHE_GROUP );
 		self::cache_mapping( self::get_mapping_row( $mapping_id ) );
+
+		// Read back the stored host so the action carries the post-update value
+		// rather than the caller's (possibly rejected/normalized) input.
+		$fresh    = self::get_mapping_row( $mapping_id );
+		$new_host = is_array( $fresh ) ? $fresh['host'] : '';
+
+		/**
+		 * Fires after a mapping is created or updated. See add_mapping().
+		 *
+		 * @param int    $mapping_id Mapping ID.
+		 * @param string $host       Host after the update.
+		 */
+		do_action( 'dms_mapping_updated', $mapping_id, $new_host );
 
 		// Pre-load rewrite rules for all active hosts.
 		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
@@ -641,6 +672,15 @@ final class DMS_Single_Site_Mappings {
 
 		wp_cache_delete( 'ss_id_' . $mapping_id, self::CACHE_GROUP );
 		wp_cache_delete( 'ss_host_' . md5( $row['host'] . '|' . $row['path'] ), self::CACHE_GROUP );
+
+		/**
+		 * Fires after a mapping is deleted, so integrations can purge page caches
+		 * (DMS_Integration_Cache) and the rewrite engine can drop cached rules.
+		 *
+		 * @param int    $mapping_id Mapping ID that was removed.
+		 * @param string $host       Host the removed mapping pointed at.
+		 */
+		do_action( 'dms_mapping_deleted', $mapping_id, $row['host'] );
 
 		// Clear rewrite engine cache for this host.
 		if ( class_exists( 'DMS_Rewrite_Engine' ) ) {
