@@ -42,10 +42,24 @@ final class DMS_Single_Site_Admin {
 	 * @return void
 	 */
 	public function register_menu() {
+		// Register the page with the primitive the capability check actually
+		// enforces. Passing the custom 'manage_dms_mappings' key here hides the
+		// page from everyone: that key is never granted to a role, and
+		// dms_current_user_can() resolves it to a primitive instead. Deriving
+		// both from dms_get_capabilities() keeps visibility and the render/handlers
+		// in sync, including for sites that filter 'dms_capabilities'.
+		$capabilities = dms_get_capabilities();
+		if ( empty( $capabilities[ DMS_CAP_MANAGE_MAPPINGS ] ) ) {
+			// Nothing maps to the capability, so no user could pass the checks in
+			// render_page() and the handlers. Registering the menu would only
+			// surface a link that dies with "You do not have permission".
+			return;
+		}
+
 		add_menu_page(
 			__( 'Domain Mappings', 'domain-mapping-system' ),
 			__( 'Domain Mappings', 'domain-mapping-system' ),
-			DMS_CAP_MANAGE_MAPPINGS,
+			$capabilities[ DMS_CAP_MANAGE_MAPPINGS ],
 			'dms-single-site',
 			array( $this, 'render_page' ),
 			'dashicons-admin-links',
