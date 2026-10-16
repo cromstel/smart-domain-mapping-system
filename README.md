@@ -6,13 +6,15 @@
 [![Release](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/release.yml/badge.svg)](https://github.com/cromstel/smart-domain-mapping-system/actions/workflows/release.yml)
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE.txt)
 
-Multisite custom domain mapping for WordPress. Mappings live in `wp_sitemeta`
-(Mercator-style), resolve through core's `wp_blogs.domain`, and are backed by DNS
+Domain mapping for WordPress in two modes. **Multisite** mappings live in
+`wp_sitemeta` (Mercator-style) and resolve through core's `wp_blogs.domain`;
+**single-site** mappings live in the `dm_mappings` table. Both are backed by DNS
 verification, SSL certificate lifecycle tracking, an audit log and a REST API.
 
-- **Requires:** WordPress 6.6+ (multisite) and PHP 8.1+
+- **Requires:** WordPress 6.6+ and PHP 8.1+
 - **No `sunrise.php`**, no drop-ins, no early bootstrap hacks
-- **Network Admin UI**, **WP-CLI** (`wp dm`) and a **REST API** (`domain-mapping/v1`)
+- **Multisite:** Network Admin UI · **Single-site:** *Settings → Domain Mappings*
+- **WP-CLI** (`wp dm`) and two **REST API** namespaces: `domain-mapping/v1`, `dms/v1`
 - **Local audit logging only** — no telemetry ever leaves the server
 
 ## How it works
@@ -64,6 +66,34 @@ DELETE /wp-json/domain-mapping/v1/mappings/(?P<id>\d+)
 POST   /wp-json/domain-mapping/v1/verify
 POST   /wp-json/domain-mapping/v1/primary
 ```
+
+## Hooks
+
+The plugin exposes a small, deliberate hook surface. Everything else is
+intentionally not filterable — in particular the `custom_html` allow-list and
+the DNS/HTTP verification methods, so a subscriber cannot widen either.
+
+**Filters**
+
+| Filter | Parameters | Purpose |
+|---|---|---|
+| `dms_capabilities` | `$caps` | Remap DMS capabilities to roles. |
+| `dm_allow_site_admin_mapping` | `$allow, $blog_id` | Opt-in: let a site admin manage its own site's mappings (Multisite, off by default). |
+| `dms_subdomain_auth_enabled` | `$enabled` | Share one auth cookie across a parent domain. |
+| `dms_alias_auth_enabled` | `$enabled` | Retired in 1.2.0 — registers nothing; raises `_doing_it_wrong()`. |
+| `dm_ssl_provider` | `$provider, $key` | Substitute the selected SSL provider. |
+| `dms_integration_{slug}_enabled` | `$enabled` | Enable/disable one integration guard (`yoast`, `cache`, `multilingual`, `borlabs`, `mdm`). |
+| `dms_audit_retention_days` | `$retention` | Filter the resolved audit-log retention window. |
+| `dms_max_log_entries` | `$max` | Log entries before rotation by size. |
+
+**Actions**
+
+| Action | Parameters | Purpose |
+|---|---|---|
+| `dms_mapping_updated` | `$mapping_id, $host` | Single-site mapping created or updated. |
+| `dms_mapping_deleted` | `$mapping_id, $host` | Single-site mapping deleted. |
+| `dms_mapping_value_updated` | `$mapping_id, $host` | Mapping value created or updated. |
+| `dms_daily_log_rotation` | — | Daily WP-Cron log-rotation event. |
 
 ## Privacy
 
