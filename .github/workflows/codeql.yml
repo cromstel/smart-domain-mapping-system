@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           # CodeQL has no PHP extractor, so scan the language surfaces it does
           # support here: the admin JavaScript and the GitHub Actions workflows.
@@ -31,4 +31,4 @@ jobs:
           languages: javascript-typescript,actions
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
