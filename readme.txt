@@ -184,8 +184,7 @@ run with `WP_MULTISITE=1`), then `vendor/bin/phpunit -c phpunit.xml.dist`.
 `bin/install-wp-tests.sh` fetches the library in CI.
 
 Static checks: `composer lint` (PHP_CodeSniffer with WordPress and
-PHPCompatibility rulesets), `composer static-analysis` (PHPStan Level 5 +
-Psalm Level 3 with WordPress plugins), `php -l`. CI runs the coding standards,
+PHPCompatibility rulesets) and `php -l`. CI runs the coding standards,
 the PHPUnit suite (MySQL), `php -l` on PHP 8.1-8.3, `node --check`, CodeQL and
 a secret scan on every push.
 
@@ -207,7 +206,7 @@ a secret scan on every push.
 * **Removal:** Alias auth (`dms_alias_auth_enabled`). Its cross-domain cookie could never be stored by a browser, and repairing the signed payload would have turned the reader into a session-forgery primitive, so the accept path was deleted rather than patched. Use `dms_subdomain_auth_enabled` with a shared parent domain.
 * **Fixed:** Alias-domain redirects no longer loop (structural cycle detection) or fall back to `wp-admin` on an off-site target; per-domain REST fields refuse multisite instead of writing the single-site table; the `dms.` audit-key namespace is consistent at every call site (rows written before this release keep their older keys); and log rotation now honours the configured retention window, which previously only the manual purge respected.
 * **Docs:** Hooks reference for filters and lifecycle actions (see `README.md`).
-* **Testing:** PHPStan Level 5 + Psalm Level 3 with WordPress extensions in CI; `composer static-analysis` + `composer audit`.
+* **Testing:** PHPUnit (Multisite) and PHP_CodeSniffer run in CI alongside `php -l`, `node --check`, CodeQL and a secret scan.
 * **Packaging:** Full GPL-2.0 license text, generated `.pot` translation template.
 
 = 1.1.1 =

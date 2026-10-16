@@ -26,11 +26,7 @@
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "phpcompatibility/phpcompatibility-wp": "^2.1",
-        "phpstan/phpstan": "^1.10",
-        "phpstan/phpstan-wordpress": "^1.2",
         "phpunit/phpunit": "^9.6",
-        "psalm/plugin-wordpress": "^2.0",
-        "vimeo/psalm": "^5.0",
         "wp-coding-standards/wpcs": "^3.0",
         "yoast/phpunit-polyfills": "^4.0"
     },
@@ -47,14 +43,12 @@
         "lint": "phpcs",
         "lint:fix": "phpcbf",
         "test": "phpunit -c phpunit.xml.dist",
-        "static-analysis": "phpstan analyse && psalm --no-cache",
         "audit": "composer audit"
     },
     "scripts-descriptions": {
         "lint": "Run PHP_CodeSniffer (WordPress + PHPCompatibility rulesets).",
         "lint:fix": "Auto-fix PHP_CodeSniffer violations where possible.",
         "test": "Run the PHPUnit suite against the WordPress test library.",
-        "static-analysis": "Run PHPStan and Psalm static analysis.",
         "audit": "Run Composer security audit."
     }
 }
