@@ -1001,6 +1001,19 @@ final class DMS_REST_DMS {
 	}
 
 	/**
+	 * Consistent "per-domain fields not supported in multisite mode" error.
+	 *
+	 * @return WP_Error
+	 */
+	private function per_domain_unsupported_error() {
+		return new WP_Error(
+			'dms_per_domain_multisite_unsupported',
+			__( 'Per-domain fields (custom code, menu, language, 404 target) live in the single-site mapping table and are not available in multisite mode; edit the site mapping record instead.', 'domain-mapping-system' ),
+			array( 'status' => 400 )
+		);
+	}
+
+	/**
 	 * Decorates a raw value row for API responses.
 	 *
 	 * @param array|null $value Raw row.
@@ -1038,6 +1051,10 @@ final class DMS_REST_DMS {
 
 	// Phase 2B: Per-domain field handlers.
 	public function get_per_domain_field( $request ) {
+		if ( DMS_Mode::is_multisite() ) {
+			return $this->per_domain_unsupported_error();
+		}
+
 		$id    = (int) $request->get_param( 'id' );
 		$field = sanitize_key( (string) $request->get_param( 'field' ) );
 
@@ -1061,6 +1078,10 @@ final class DMS_REST_DMS {
 	}
 
 	public function update_per_domain_field( $request ) {
+		if ( DMS_Mode::is_multisite() ) {
+			return $this->per_domain_unsupported_error();
+		}
+
 		$id    = (int) $request->get_param( 'id' );
 		$field = sanitize_key( (string) $request->get_param( 'field' ) );
 		$value = $request->get_param( 'value' );
