@@ -89,9 +89,15 @@ final class DMS_Rewrite_Engine {
 			}
 		}
 
-		// Sort by priority: exact match > regex > wildcard.
-		usort( $rules['rewrite'] ?? array(), array( __CLASS__, 'sort_rules' ) );
-		usort( $rules['query'] ?? array(), array( __CLASS__, 'sort_rules' ) );
+		// Sort by priority: exact match > regex > wildcard. usort() sorts in
+		// place, so it needs a real variable — a `??` expression is not
+		// referenceable and fatals on PHP 8. Only sort keys we actually built.
+		if ( isset( $rules['rewrite'] ) ) {
+			usort( $rules['rewrite'], array( __CLASS__, 'sort_rules' ) );
+		}
+		if ( isset( $rules['query'] ) ) {
+			usort( $rules['query'], array( __CLASS__, 'sort_rules' ) );
+		}
 
 		return $rules;
 	}
@@ -340,9 +346,15 @@ final class DMS_Rewrite_Engine {
 				}
 			}
 
-			// Sort by priority.
-			usort( $rules['rewrite'] ?? array(), array( __CLASS__, 'sort_rules' ) );
-			usort( $rules['query'] ?? array(), array( __CLASS__, 'sort_rules' ) );
+			// Sort by priority. usort() sorts in place, so it needs a real
+			// variable — a `??` expression is not referenceable and fatals on
+			// PHP 8. Only sort keys we actually built.
+			if ( isset( $rules['rewrite'] ) ) {
+				usort( $rules['rewrite'], array( __CLASS__, 'sort_rules' ) );
+			}
+			if ( isset( $rules['query'] ) ) {
+				usort( $rules['query'], array( __CLASS__, 'sort_rules' ) );
+			}
 
 			$cache[ $mapping['host'] ] = $rules;
 		}

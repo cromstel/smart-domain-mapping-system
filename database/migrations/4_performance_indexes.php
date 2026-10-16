@@ -20,7 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-global $wpdb;
+// This file is require()d from inside DMS_DB_Tables::run_migration_4(), so its
+// "file scope" is actually that method's local scope. Declare the table names
+// as globals here, otherwise the assignments below land in local scope and the
+// functions underneath (which read them through `global`) see empty strings —
+// issuing "DESCRIBE " and "ALTER TABLE  ..." against no table at all.
+global $wpdb, $table_mappings, $table_values;
 
 $table_mappings = $wpdb->base_prefix . 'dm_mappings';
 $table_values   = $wpdb->base_prefix . 'dm_mapping_values';
