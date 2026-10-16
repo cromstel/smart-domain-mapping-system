@@ -33,7 +33,7 @@ define( 'DMS_PLUGIN_DIR', __DIR__ );
 
 // Schema version is decoupled from the release version: the data layer can
 // gain tables/migrations in unreleased work without bumping the plugin header.
-define( 'DMS_DB_VERSION', '4' );
+define( 'DMS_DB_VERSION', '5' );
 
 define( 'DMS_TABLE_VERIFICATIONS', 'dm_verifications' );
 define( 'DMS_TABLE_SSL', 'dm_certificates' );

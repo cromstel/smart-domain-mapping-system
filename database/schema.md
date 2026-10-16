@@ -41,8 +41,9 @@ Tables created by `DMS_DB_Tables::create_tables()` (`includes/core/class-db-tabl
 - `domain` varchar(255) DEFAULT NULL
 - `action` varchar(64) NOT NULL (mapping_create | mapping_update | mapping_delete | mapping_enable | mapping_disable | mapping_set_primary | verify_request | verify_success | verify_failure | cert_issue_request | cert_renew_request | cert_renew_success | cert_renew_failure | audit_purged | dms.mapping.create | dms.mapping.update | dms.mapping.delete)
 - `context` text DEFAULT NULL (JSON string of relevant state)
+- `correlation_id` varchar(36) DEFAULT NULL (UUID v4 joining the rows of one request/operation; added in migration 5)
 - `created_at` datetime DEFAULT CURRENT_TIMESTAMP
-- INDEX: `blog_id` (blog_id), `user_id` (user_id), `action` (action)
+- INDEX: `blog_id` (blog_id), `domain` (domain), `user_id` (user_id), `correlation_id` (correlation_id)
 
 ## `dm_mappings` *(added in migration 2 — single-site mode / `dms/v1`; extended in migration 3 — Phase 2 per-domain meta)*
 - `id` bigint(20) unsigned AUTO_INCREMENT PRIMARY KEY

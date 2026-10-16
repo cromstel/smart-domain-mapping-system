@@ -52,6 +52,9 @@ class DMS_DB_Tables {
 			KEY status (status)
 		) {$charset_collate};";
 
+		// correlation_id joins every row written for one request/operation so an
+		// export can be traced end-to-end. Existing installs get it from
+		// maybe_add_log_columns() below (schema version 5).
 		$sql3 = "CREATE TABLE $logs_table (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			blog_id bigint(20) unsigned DEFAULT NULL,
@@ -59,11 +62,13 @@ class DMS_DB_Tables {
 			user_id bigint(20) unsigned DEFAULT NULL,
 			action varchar(64) NOT NULL,
 			context text DEFAULT NULL,
+			correlation_id varchar(36) DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY blog_id (blog_id),
 			KEY domain (domain),
-			KEY user_id (user_id)
+			KEY user_id (user_id),
+			KEY correlation_id (correlation_id)
 		) {$charset_collate};";
 
 		// Phase 1 (feature-integration plan): single-site mapping store.
@@ -118,6 +123,9 @@ class DMS_DB_Tables {
 		// dbDelta handles CREATE TABLE but not ALTER TABLE for new columns on existing tables.
 		// Run explicit ALTERs if columns don't exist (idempotent via IF NOT EXISTS via dbDelta limitations).
 		self::maybe_add_mapping_columns( $mappings_table );
+
+		// Migration 5: add correlation_id to dm_audit_log on existing installs.
+		self::maybe_add_log_columns( $logs_table );
 	}
 
 	/**
@@ -159,6 +167,39 @@ class DMS_DB_Tables {
 
 		// Run Phase 4 performance migration (indexes + denormalized host).
 		self::run_migration_4();
+	}
+
+	/**
+	 * Adds migration 5 columns to dm_audit_log if they don't exist.
+	 *
+	 * Without correlation_id, DMS_Logging::log() writes a column the table does
+	 * not have, so every audit insert fails silently and the audit trail is
+	 * empty — the column must reach installs that were created at schema
+	 * version 4 or earlier.
+	 *
+	 * @param string $table Fully qualified table name.
+	 * @return void
+	 */
+	private static function maybe_add_log_columns( string $table ) {
+		global $wpdb;
+
+		$columns = $wpdb->get_col( "DESCRIBE {$table}", 0 );
+		$columns = array_flip( (array) $columns );
+
+		if ( ! isset( $columns['correlation_id'] ) ) {
+			$sql = "ALTER TABLE {$table} ADD COLUMN correlation_id varchar(36) DEFAULT NULL AFTER context";
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table/column names.
+			$wpdb->query( $sql );
+		}
+
+		// dbDelta cannot add an index to an existing table, so check explicitly.
+		$index_exists = $wpdb->get_var(
+			"SHOW INDEX FROM {$table} WHERE Key_name = 'correlation_id'"
+		);
+		if ( ! $index_exists ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table name.
+			$wpdb->query( "ALTER TABLE {$table} ADD KEY correlation_id (correlation_id)" );
+		}
 	}
 
 	/**

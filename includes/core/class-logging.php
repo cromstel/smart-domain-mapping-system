@@ -45,16 +45,18 @@ final class DMS_Logging {
 	 * @param int         $user_id   User ID performing the action.
 	 * @param string      $action    Action key (e.g., 'dms.mapping.create').
 	 * @param array|string $context  Context data (array will be JSON-encoded).
-	 * @return void
+	 * @return bool True when the row was written. False means the audit trail
+	 *              lost an event — callers should treat a false as a signal to
+	 *              check $wpdb->last_error, never to retry blindly.
 	 */
-	public function log( ?int $blog_id, ?string $domain, int $user_id, string $action, $context = '' ) {
+	public function log( ?int $blog_id, ?string $domain, int $user_id, string $action, $context = '' ): bool {
 		global $wpdb;
 
 		$correlation_id = $this->generate_correlation_id();
 
 		$context_json = is_array( $context ) ? wp_json_encode( $context ) : sanitize_textarea_field( (string) $context );
 
-		$wpdb->insert(
+		$result = $wpdb->insert(
 			$wpdb->base_prefix . DMS_TABLE_LOGS,
 			array(
 				'blog_id'        => $blog_id ? absint( $blog_id ) : null,
@@ -65,8 +67,12 @@ final class DMS_Logging {
 				'correlation_id' => $correlation_id,
 				'created_at'     => current_time( 'mysql' ),
 			),
-			array( '%d', '%s', '%d', '%s', '%s', '%s' )
+			// One placeholder per column above. A short list here means the
+			// whole INSERT silently fails in PHP 8 and the row is never written.
+			array( '%d', '%s', '%d', '%s', '%s', '%s', '%s' )
 		);
+
+		return false !== $result;
 	}
 
 	/**
@@ -112,16 +118,17 @@ final class DMS_Logging {
 			);
 		}
 
-		// Delete by count (keep most recent).
+		// Delete by count (keep most recent). MySQL rejects
+		// `DELETE ... WHERE id IN (SELECT id FROM <same table>)` with error 1093,
+		// which is why this is a single-table DELETE with ORDER BY + LIMIT
+		// instead of a self-referencing subquery.
 		$table = $wpdb->base_prefix . DMS_TABLE_LOGS;
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
-		if ( $count > $max_entries ) {
-			$to_delete = $count - $max_entries;
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		if ( $count > (int) $max_entries ) {
+			$to_delete = $count - (int) $max_entries;
 			$wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$table} WHERE id IN (
-						SELECT id FROM {$table} ORDER BY created_at ASC LIMIT %d
-					)",
+					"DELETE FROM {$table} ORDER BY created_at ASC, id ASC LIMIT %d",
 					$to_delete
 				)
 			);
