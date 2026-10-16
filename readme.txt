@@ -1,7 +1,7 @@
 === Smart Domain Mapping System ===
 Contributors: CITGROUP
 Tags: multisite, domain mapping, ssl, dns, single-site, rewrite, cli
-Requires at least: 6.6
+Requires at least: 6.4
 Requires PHP: 8.1
 Tested up to: 6.6
 Stable tag: 1.2.0
