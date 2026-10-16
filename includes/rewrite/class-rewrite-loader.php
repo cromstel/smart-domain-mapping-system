@@ -131,12 +131,12 @@ function dms_rewrite_get_path() {
 /**
  * Builds the target URL for a rewrite/redirect match.
  *
- * @param array  $mapping    Mapping array.
- * @param array  $match      Matched rule.
+ * @param array  $mapping     Mapping array.
+ * @param array  $matched_rule Normalized rule that matched the request path.
  * @param string $request_uri Original request URI.
  * @return string|false Target URL or false.
  */
-function dms_rewrite_build_target_url( $mapping, $match, $request_uri ) {
+function dms_rewrite_build_target_url( $mapping, $matched_rule, $request_uri ) {
 	if ( empty( $mapping['host'] ) ) {
 		return false;
 	}
@@ -150,7 +150,7 @@ function dms_rewrite_build_target_url( $mapping, $match, $request_uri ) {
 	$query        = isset( $parsed['query'] ) ? '?' . $parsed['query'] : '';
 
 	// Apply rewrite target if it's a path rewrite.
-	$target_path = $match['target'] ? $match['target'] : $request_path;
+	$target_path = $matched_rule['target'] ? $matched_rule['target'] : $request_path;
 
 	// Ensure target_path is absolute.
 	if ( $target_path && '/' !== $target_path[0] ) {

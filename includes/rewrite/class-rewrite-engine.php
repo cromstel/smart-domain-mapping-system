@@ -118,9 +118,11 @@ final class DMS_Rewrite_Engine {
 			'priority'      => isset( $rule['priority'] ) ? absint( $rule['priority'] ) : 10,
 		);
 
-		// Compile regex if needed.
+		// Compile regex if needed. A false return from preg_match() is the
+		// expected "this is not a usable pattern" signal, so the E_WARNING a
+		// malformed pattern raises is intentionally suppressed here only.
 		if ( $normalized['regex'] ) {
-			$normalized['compiled'] = @preg_match( $normalized['source'], '' ) !== false;
+			$normalized['compiled'] = @preg_match( $normalized['source'], '' ) !== false; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Regex validity probe: false is the validation result, not a swallowed runtime error.
 			if ( ! $normalized['compiled'] ) {
 				return null;
 			}
@@ -240,15 +242,18 @@ final class DMS_Rewrite_Engine {
 	 */
 	private static function path_matches( $path, $rule ) {
 		if ( $rule['regex'] ) {
-			return (bool) @preg_match( $rule['source'], $path );
+			// Pattern was already compiled/validated when the rule was loaded
+			// (normalize_rewrite_rule), so this only ever fails on a match.
+			return 1 === @preg_match( $rule['source'], $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Pattern validated at load; suppressing stale-cache warnings only.
 		}
 
-		// Wildcard support: * matches any segment.
+		// Wildcard support: * matches any segment. The pattern below is built
+		// from preg_quote() with '#' escaped, so it is always valid.
 		$pattern = preg_quote( $rule['source'], '#' );
 		$pattern = str_replace( '\*', '([^/]+)', $pattern );
 		$pattern = '#^' . $pattern . '$#';
 
-		return (bool) @preg_match( $pattern, $path );
+		return 1 === preg_match( $pattern, $path );
 	}
 
 	/**
@@ -265,6 +270,9 @@ final class DMS_Rewrite_Engine {
 			return;
 		}
 
+		// Read-only reuse of the parsed query string (not form input): the
+		// values are replaced below by admin-configured query rules.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$query = $_GET;
 
 		foreach ( $rules['query'] as $rule ) {

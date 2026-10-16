@@ -2,6 +2,12 @@
 # contributor's core.autocrlf setting.
 *.sh text eol=lf
 
+# PHP and Markdown are stored and checked out with LF everywhere so a Windows
+# working tree (core.autocrlf=true) matches CI. Without this, PHPCS sees CRLF
+# locally and reports "End of line character is invalid" while CI passes.
+*.php text eol=lf
+*.md text eol=lf
+
 # Binary assets are never line-ending normalized.
 *.png binary
 *.jpg binary

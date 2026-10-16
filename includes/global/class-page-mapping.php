@@ -29,7 +29,7 @@ final class DMS_Global_Page_Mapping {
 			return;
 		}
 		add_action( 'template_redirect', array( $this, 'maybe_redirect_page' ), 15 );
-		add_filter( 'page_link', array( $this, 'filter_page_link' ), 20, 3 );
+		add_filter( 'page_link', array( $this, 'filter_page_link' ), 20, 2 );
 	}
 
 	/**
@@ -84,12 +84,11 @@ final class DMS_Global_Page_Mapping {
 	/**
 	 * Filters page links to use mapped domains for child pages.
 	 *
-	 * @param string $link Page link.
-	 * @param int $page_id Page ID.
-	 * @param int $sample Sample flag.
+	 * @param string $link    Page link.
+	 * @param int    $page_id Page ID.
 	 * @return string Modified link.
 	 */
-	public function filter_page_link( $link, $page_id, $_sample ) {
+	public function filter_page_link( $link, $page_id ) {
 		if ( ! DMS_Mode::is_single_site() ) {
 			return $link;
 		}
