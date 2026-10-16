@@ -31,31 +31,52 @@ $table_mappings = $wpdb->base_prefix . 'dm_mappings';
 $table_values   = $wpdb->base_prefix . 'dm_mapping_values';
 
 /**
+ * Whether a named index exists on a table.
+ *
+ * DESCRIBE lists columns only, so it can never see an index. Composite indexes
+ * must be probed with SHOW INDEX instead, otherwise every run re-adds keys that
+ * dbDelta already created and MySQL rejects the entire ALTER with "Duplicate key
+ * name" — which also silently drops any other key batched into the statement.
+ *
+ * @param string $table Fully qualified table name.
+ * @param string $index Index (key) name.
+ * @return bool
+ */
+function dm_migration_4_has_index( $table, $index ) {
+	global $wpdb;
+	return (bool) $wpdb->get_var(
+		$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $index ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table name.
+	);
+}
+
+/**
  * Creates the Phase 3B performance optimizations.
  */
 function dm_migration_4_up() {
 	global $wpdb, $table_mappings, $table_values;
 
-	$mapping_cols = $wpdb->get_col( "DESCRIBE {$table_mappings}", 0 );
-	$mapping_cols = array_flip( $mapping_cols );
-
-	$value_cols = $wpdb->get_col( "DESCRIBE {$table_values}", 0 );
-	$value_cols = array_flip( $value_cols );
+	$value_cols = array_flip( (array) $wpdb->get_col( "DESCRIBE {$table_values}", 0 ) );
 
 	$alter_mapping = array();
 	$alter_values  = array();
 
-	// Add composite indexes to dm_mappings.
-	if ( ! isset( $mapping_cols['host_active'] ) ) {
+	// Composite indexes on dm_mappings — these are keys, not columns, so they
+	// must be probed with SHOW INDEX (see dm_migration_4_has_index()).
+	if ( ! dm_migration_4_has_index( $table_mappings, 'host_active' ) ) {
 		$alter_mapping[] = 'ADD KEY host_active (host, active)';
 	}
-	if ( ! isset( $mapping_cols['host_verified'] ) ) {
+	if ( ! dm_migration_4_has_index( $table_mappings, 'host_verified' ) ) {
 		$alter_mapping[] = 'ADD KEY host_verified (host, verified)';
 	}
 
-	// Add host column to dm_mapping_values for denormalized lookups.
+	// Denormalized host column on dm_mapping_values (a real column, so DESCRIBE
+	// is the right probe) plus its index.
+	$added_host_column = false;
 	if ( ! isset( $value_cols['host'] ) ) {
-		$alter_values[] = 'ADD COLUMN host varchar(255) NOT NULL DEFAULT \'\' AFTER mapping_id';
+		$alter_values[]    = 'ADD COLUMN host varchar(255) NOT NULL DEFAULT \'\' AFTER mapping_id';
+		$added_host_column = true;
+	}
+	if ( ! dm_migration_4_has_index( $table_values, 'host' ) ) {
 		$alter_values[] = 'ADD KEY host (host)';
 	}
 
@@ -71,9 +92,8 @@ function dm_migration_4_up() {
 		$wpdb->query( $sql );
 	}
 
-	// Backfill host column in existing mapping_values rows.
-	if ( ! empty( $alter_values ) ) {
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table names.
+	// Backfill host for rows written before the column existed.
+	if ( $added_host_column ) {
 		$wpdb->query(
 			"
 			UPDATE {$table_values} v
@@ -91,23 +111,21 @@ function dm_migration_4_up() {
 function dm_migration_4_down() {
 	global $wpdb, $table_mappings, $table_values;
 
-	$mapping_cols = $wpdb->get_col( "DESCRIBE {$table_mappings}", 0 );
-	$mapping_cols = array_flip( $mapping_cols );
-
-	$value_cols = $wpdb->get_col( "DESCRIBE {$table_values}", 0 );
-	$value_cols = array_flip( $value_cols );
+	$value_cols = array_flip( (array) $wpdb->get_col( "DESCRIBE {$table_values}", 0 ) );
 
 	$alter_mapping = array();
 	$alter_values  = array();
 
 	foreach ( array( 'host_active', 'host_verified' ) as $idx ) {
-		if ( isset( $mapping_cols[ $idx ] ) ) {
+		if ( dm_migration_4_has_index( $table_mappings, $idx ) ) {
 			$alter_mapping[] = "DROP KEY {$idx}";
 		}
 	}
 
-	if ( isset( $value_cols['host'] ) ) {
+	if ( dm_migration_4_has_index( $table_values, 'host' ) ) {
 		$alter_values[] = 'DROP KEY host';
+	}
+	if ( isset( $value_cols['host'] ) ) {
 		$alter_values[] = 'DROP COLUMN host';
 	}
 

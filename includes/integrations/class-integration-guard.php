@@ -17,6 +17,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 abstract class DMS_Integration_Guard {
 
 	/**
+	 * Shared guard instances, keyed by concrete class name.
+	 *
+	 * @var array<string, DMS_Integration_Guard>
+	 */
+	private static $instances = array();
+
+	/**
+	 * Returns the shared instance of the called guard class.
+	 *
+	 * DMS_Integrations resolves every guard through this factory, so the
+	 * guards must be instantiable without arguments. Each subclass is a
+	 * stateless singleton with its configuration in property defaults.
+	 *
+	 * @return static
+	 */
+	public static function get_instance() {
+		$class = static::class;
+		if ( ! isset( self::$instances[ $class ] ) ) {
+			self::$instances[ $class ] = new static();
+		}
+		return self::$instances[ $class ];
+	}
+
+	/**
 	 * Integration slug (lowercase, hyphenated).
 	 *
 	 * @var string

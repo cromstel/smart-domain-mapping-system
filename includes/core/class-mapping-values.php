@@ -231,7 +231,7 @@ final class DMS_Mapping_Values {
 		global $wpdb;
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT id, mapping_id, object_type, object_id, primary, created_at FROM ' . self::table() . ' WHERE mapping_id = %d ORDER BY id ASC', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table name.
+				'SELECT id, mapping_id, object_type, object_id, `primary`, created_at FROM ' . self::table() . ' WHERE mapping_id = %d ORDER BY id ASC', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table name.
 				$mapping_id
 			),
 			ARRAY_A
@@ -268,7 +268,7 @@ final class DMS_Mapping_Values {
 		}
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT m.* FROM ' . self::table() . ' v INNER JOIN ' . DMS_Single_Site_Mappings::table() . ' m ON m.id = v.mapping_id WHERE v.object_type = %s AND v.object_id = %d ORDER BY v.primary DESC, m.id ASC', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table names.
+				'SELECT m.* FROM ' . self::table() . ' v INNER JOIN ' . DMS_Single_Site_Mappings::table() . ' m ON m.id = v.mapping_id WHERE v.object_type = %s AND v.object_id = %d ORDER BY v.`primary` DESC, m.id ASC', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- trusted table names.
 				$object_type,
 				$object_id
 			),

@@ -70,7 +70,7 @@ final class DMS_Test_Single_Site_Mappings extends WP_UnitTestCase {
 		$host = 'example.org';
 		DMS_Single_Site_Mappings::add_mapping( $host, '', array( 'active' => true ) );
 		$result = DMS_Single_Site_Mappings::add_mapping( $host, '', array( 'active' => true ) );
-		$this->assertIs_wp_error( $result, 'adding duplicate host/path should return a WP_Error.' );
+		$this->assertWPError( $result, 'adding duplicate host/path should return a WP_Error.' );
 	}
 
 	public function test_get_mapping_for_host() {
@@ -87,7 +87,9 @@ final class DMS_Test_Single_Site_Mappings extends WP_UnitTestCase {
 		$result = DMS_Single_Site_Mappings::remove_mapping( $id );
 		$this->assertTrue( $result, 'remove_mapping should return true on success.' );
 		$still = DMS_Single_Site_Mappings::get_mapping( $id );
-		$this->assertNull( $still, 'mapping should no longer exist after removal.' );
+		// get_mapping() follows the array|WP_Error contract and returns
+		// dms_not_found once the row is gone.
+		$this->assertWPError( $still, 'mapping should no longer exist after removal.' );
 	}
 
 	public function test_normalize_host_path() {
@@ -115,7 +117,8 @@ final class DMS_Test_Mapping_Values extends WP_UnitTestCase {
 		$val = DMS_Mapping_Values::get_value( $val_id );
 		$this->assertEquals( 'post', $val['object_type'], 'object_type should be post.' );
 		$this->assertEquals( 42, $val['object_id'], 'object_id should be 42.' );
-		$this->assertTrue( $val['primary'], 'primary should be true.' );
+		// get_value() returns the raw DB row, so the flag arrives as '1'.
+		$this->assertTrue( (bool) $val['primary'], 'primary should be true.' );
 	}
 
 	public function test_set_unsupported_object_type() {
@@ -123,7 +126,7 @@ final class DMS_Test_Mapping_Values extends WP_UnitTestCase {
 		$this->assertIsInt( $mapping_id, 'add_mapping prerequisite.' );
 
 		$result = DMS_Mapping_Values::set_value( $mapping_id, 'invalid_cpt', 99 );
-		$this->assertIs_wp_error( $result, 'unsupported object type should return WP_Error.' );
+		$this->assertWPError( $result, 'unsupported object type should return WP_Error.' );
 	}
 
 	public function test_remove_value() {
