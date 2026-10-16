@@ -85,7 +85,7 @@ final class DMS_DNS_Verification {
 			$blog_id,
 			$domain,
 			get_current_user_id(),
-			'verification.requested',
+			'dms.verification.requested',
 			wp_json_encode( array( 'method' => $method ) )
 		);
 
@@ -157,7 +157,7 @@ final class DMS_DNS_Verification {
 				$blog_id,
 				$domain,
 				get_current_user_id(),
-				'verification.failed',
+				'dms.verification.failed',
 				wp_json_encode( array( 'error' => $failure ) )
 			);
 			return new WP_Error( 'dm_verification_failed', $failure, array( 'status' => 400 ) );
@@ -176,7 +176,7 @@ final class DMS_DNS_Verification {
 			array( '%d' )
 		);
 
-		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'verification.completed', '' );
+		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'dms.verification.completed', '' );
 
 		return array(
 			'domain' => $domain,

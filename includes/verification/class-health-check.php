@@ -71,7 +71,7 @@ final class DMS_Health_Check {
 				0,
 				'',
 				0,
-				'audit.purged',
+				'dms.audit.purged',
 				wp_json_encode(
 					array(
 						'deleted'        => (int) $deleted,

@@ -283,7 +283,7 @@ final class DMS_Mapping_Engine {
 			$blog_id,
 			$normalized,
 			get_current_user_id(),
-			'mapping.create',
+			'dms.mapping.create',
 			wp_json_encode(
 				array(
 					'blog_id'      => $blog_id,
@@ -478,7 +478,7 @@ final class DMS_Mapping_Engine {
 			return $gate;
 		}
 		update_site_meta( get_current_network_id(), self::ACTIVE_PREFIX . $domain, '1' );
-		DMS_Logging::get_instance()->log( (int) $row->meta_value, $domain, get_current_user_id(), 'mapping.enable', '' );
+		DMS_Logging::get_instance()->log( (int) $row->meta_value, $domain, get_current_user_id(), 'dms.mapping.enable', '' );
 		return self::get_mapping( $mapping_id );
 	}
 
@@ -501,7 +501,7 @@ final class DMS_Mapping_Engine {
 			return $restored;
 		}
 		update_site_meta( get_current_network_id(), self::ACTIVE_PREFIX . $domain, '0' );
-		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'mapping.disable', '' );
+		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'dms.mapping.disable', '' );
 		return self::get_mapping( $mapping_id );
 	}
 
@@ -542,7 +542,7 @@ final class DMS_Mapping_Engine {
 		delete_site_meta( get_current_network_id(), self::ACTIVE_PREFIX . $domain );
 		wp_cache_delete( self::META_PREFIX . $domain, self::CACHE_GROUP );
 
-		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'mapping.remove', '' );
+		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'dms.mapping.remove', '' );
 		return true;
 	}
 
@@ -605,7 +605,7 @@ final class DMS_Mapping_Engine {
 		}
 		$wpdb->query( 'RELEASE SAVEPOINT dm_set_primary' );
 
-		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'mapping.primary', '' );
+		DMS_Logging::get_instance()->log( $blog_id, $domain, get_current_user_id(), 'dms.mapping.primary', '' );
 		return self::get_mapping( $mapping_id );
 	}
 
