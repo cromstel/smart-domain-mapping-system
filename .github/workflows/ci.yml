@@ -52,8 +52,16 @@ jobs:
         run: vendor/bin/phpcs --standard=.phpcs.xml.dist
 
   phpunit:
-    name: PHPUnit (WordPress multisite)
+    name: PHPUnit (WordPress ${{ matrix.mode }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: multisite
+            wp_multisite: '1'
+          - mode: single-site
+            wp_multisite: '0'
     services:
       mysql:
         image: mysql:8.0
@@ -86,7 +94,7 @@ jobs:
       - name: Run the test suite
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
-          WP_MULTISITE: '1'
+          WP_MULTISITE: ${{ matrix.wp_multisite }}
         run: vendor/bin/phpunit -c phpunit.xml.dist
 
   secrets:

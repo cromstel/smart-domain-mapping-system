@@ -23,11 +23,13 @@ final class DMS_Test_Migration_2 extends WP_UnitTestCase {
 		$mappings = $wpdb->base_prefix . DMS_TABLE_MAPPINGS;
 		$values   = $wpdb->base_prefix . DMS_TABLE_VALUES;
 
-		$this->assertTrue(
+		// get_var() returns the table name (a string), not a boolean, so a
+		// strict assertTrue() would fail even when the table exists.
+		$this->assertNotEmpty(
 			$wpdb->get_var( "SHOW TABLES LIKE '{$mappings}'" ),
 			'dm_mappings table should exist after migration 2.'
 		);
-		$this->assertTrue(
+		$this->assertNotEmpty(
 			$wpdb->get_var( "SHOW TABLES LIKE '{$values}'" ),
 			'dm_mapping_values table should exist after migration 2.'
 		);
@@ -38,8 +40,15 @@ final class DMS_Test_Migration_2 extends WP_UnitTestCase {
 
 		$table = $wpdb->base_prefix . DMS_TABLE_MAPPINGS;
 		$cols  = $wpdb->get_col( "DESCRIBE {$table}" );
-		$expected = array( 'id', 'host', 'path', 'attachment_id', 'custom_html', 'active', 'verified', '`primary`' );
-		$this->assertEquals( $expected, $cols, 'dm_mappings should have all Phase 1 columns.' );
+
+		// The schema grows across phases (menu_id, language, redirect_404,
+		// rewrite_rules, query_string_rules, created_at, updated_at …), so
+		// assert the required columns are present rather than pinning the
+		// complete list to one phase's snapshot.
+		$required = array( 'id', 'host', 'path', 'attachment_id', 'custom_html', 'active', 'verified', 'primary' );
+		foreach ( $required as $column ) {
+			$this->assertContains( $column, $cols, "dm_mappings should have the `{$column}` column." );
+		}
 	}
 
 	public function test_values_schema_has_required_columns() {
@@ -47,8 +56,11 @@ final class DMS_Test_Migration_2 extends WP_UnitTestCase {
 
 		$table = $wpdb->base_prefix . DMS_TABLE_VALUES;
 		$cols  = $wpdb->get_col( "DESCRIBE {$table}" );
-		$expected = array( 'id', 'mapping_id', 'object_type', 'object_id', '`primary`' );
-		$this->assertEquals( $expected, $cols, 'dm_mapping_values should have all Phase 1 columns.' );
+
+		$required = array( 'id', 'mapping_id', 'object_type', 'object_id', 'primary' );
+		foreach ( $required as $column ) {
+			$this->assertContains( $column, $cols, "dm_mapping_values should have the `{$column}` column." );
+		}
 	}
 
 	public function test_mappings_unique_host_path() {
@@ -56,14 +68,21 @@ final class DMS_Test_Migration_2 extends WP_UnitTestCase {
 
 		$table = $wpdb->base_prefix . DMS_TABLE_MAPPINGS;
 		// UNIQUE KEY means SHOW INDEX will list it; verify the constraint exists.
-		$idx = $wpdb->get_var( "
+		// %s placeholders are unquoted — prepare() adds the quotes itself.
+		$idx = $wpdb->get_var(
+			$wpdb->prepare(
+				"
 			SELECT INDEX_NAME
 			FROM information_schema.STATISTICS
-			WHERE TABLE_SCHEMA = '%s'
-			AND TABLE_NAME = '%s'
+			WHERE TABLE_SCHEMA = %s
+			AND TABLE_NAME = %s
 			AND COLUMN_NAME = 'host'
 			AND INDEX_NAME = 'host_path'
-		", $wpdb->dbname, $table );
+		",
+				$wpdb->dbname,
+				$table
+			)
+		);
 		$this->assertNotEmpty( $idx, 'dm_mappings should have a UNIQUE KEY on (host, path).' );
 	}
 
@@ -71,14 +90,20 @@ final class DMS_Test_Migration_2 extends WP_UnitTestCase {
 		global $wpdb;
 
 		$table = $wpdb->base_prefix . DMS_TABLE_VALUES;
-		$idx = $wpdb->get_var( "
+		$idx = $wpdb->get_var(
+			$wpdb->prepare(
+				"
 			SELECT INDEX_NAME
 			FROM information_schema.STATISTICS
-			WHERE TABLE_SCHEMA = '%s'
-			AND TABLE_NAME = '%s'
+			WHERE TABLE_SCHEMA = %s
+			AND TABLE_NAME = %s
 			AND COLUMN_NAME = 'mapping_id'
 			AND INDEX_NAME = 'mapping_object'
-		", $wpdb->dbname, $table );
+		",
+				$wpdb->dbname,
+				$table
+			)
+		);
 		$this->assertNotEmpty( $idx, 'dm_mapping_values should have a UNIQUE KEY on (mapping_id, object_type, object_id).' );
 	}
 }

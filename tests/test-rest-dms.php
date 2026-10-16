@@ -16,6 +16,18 @@ use WP_UnitTestCase;
 
 final class DMS_Test_REST_Contract extends WP_UnitTestCase {
 
+	public function set_up() {
+		parent::set_up();
+
+		if ( DMS_Mode::is_multisite() ) {
+			$this->markTestSkipped( 'The dms/v1 contract is single-site only; in multisite its routes delegate to the multisite engine.' );
+		}
+
+		// The endpoints are capability-gated; in single-site the DMS
+		// capabilities map to manage_options, i.e. an administrator.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+	}
+
 	/**
 	 * Creates one single-site mapping per test to reuse in POST/PATCH/GET/DELETE.
 	 *

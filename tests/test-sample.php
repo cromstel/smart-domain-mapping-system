@@ -5,6 +5,14 @@
  */
 class DMS_Test_Mapping_Engine extends WP_UnitTestCase {
 
+	public function set_up() {
+		parent::set_up();
+
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'The mapping engine is the Multisite engine; this suite runs in both modes.' );
+		}
+	}
+
 	public function test_normalize_domain() {
 		$engine = new ReflectionMethod( DMS_Mapping_Engine::class, 'normalize_domain' );
 		$engine->setAccessible( true );

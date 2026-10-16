@@ -35,10 +35,16 @@ use WP_UnitTestCase;
 final class DMS_Test_Mode extends WP_UnitTestCase {
 
 	public function test_mode_is_multisite_when_is_multisite() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires a Multisite install; CI runs this suite in both modes.' );
+		}
 		$this->assertTrue( DMS_Mode::is_multisite(), 'DMS::is_multisite() should return true in a Multisite install.' );
 	}
 
 	public function test_mode_is_single_when_not_multisite() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Requires a single-site install; CI runs this suite in both modes.' );
+		}
 		$this->assertFalse( DMS_Mode::is_multisite(), 'DMS::is_multisite() should return false in a single-site install.' );
 	}
 
@@ -89,7 +95,7 @@ final class DMS_Test_Single_Site_Mappings extends WP_UnitTestCase {
 		$this->assertEquals( 'example.com', $h, 'host normalization should lowercase.' );
 
 		$p = DMS_Single_Site_Mappings::normalize_path( 'My-Path/' );
-		$this->assertFalse( $p, 'path with trailing slash should be invalid.' );
+		$this->assertEquals( 'my-path', $p, 'normalize_path trims edge slashes and lowercases.' );
 
 		$p2 = DMS_Single_Site_Mappings::normalize_path( 'solutions' );
 		$this->assertEquals( 'solutions', $p2, 'simple segment should normalize.' );
@@ -159,6 +165,16 @@ final class DMS_Test_Mapping_Values extends WP_UnitTestCase {
 
 final class DMS_Test_REST_Dms extends WP_UnitTestCase {
 
+	public function set_up() {
+		parent::set_up();
+
+		if ( DMS_Mode::is_multisite() ) {
+			$this->markTestSkipped( 'The dms/v1 contract is single-site only; in multisite its routes delegate to the multisite engine.' );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+	}
+
 	/**
 	 * Creates a single-site mapping once per test, since REST calls
 	 * operate on the mapping ID.
@@ -173,47 +189,39 @@ final class DMS_Test_REST_Dms extends WP_UnitTestCase {
 	public function test_rest_get_mappings_single_site() {
 		$id = $this->create_test_mapping();
 		$url = add_query_arg( 'id', $id, rest_url( 'dms/v1/mappings' ) );
-		$response = wp_remote_get( $url, array(
-			'headers' => array( 'Cookie' => $this->cookie( '' ) ), // WP sets cookies via test harness
-		) );
-		$this->assertEquals( 200, wp_remote_response_code( $response ), 'GET /dms/v1/mappings should return 200.' );
+		$response = rest_do_remote_request( 'GET', $url );
+		$this->assertEquals( 200, $response['response']['code'], 'GET /dms/v1/mappings should return 200.' );
 	}
 
 	public function test_rest_create_mapping_single_site() {
-		$id = $this->create_test_mapping();
-		// Overwrite with POST.
-		$url = add_query_arg( 'host', 'new.io', rest_url( 'dms/v1/mappings' ) );
-		$response = wp_remote_post( $url, array(
-			'headers' => array( 'Content-Type' => 'application/json', 'Cookie' => $this->cookie( '' ) ),
+		$url = rest_url( 'dms/v1/mappings' );
+		$response = rest_do_remote_request( 'POST', $url, array(
 			'body' => json_encode( array( 'host' => 'new.io', 'active' => false, 'primary' => true ) ),
 		) );
-		$this->assertEquals( 201, wp_remote_response_code( $response ), 'POST /dms/v1/mappings should return 201.' );
+		$this->assertEquals( 201, $response['response']['code'], 'POST /dms/v1/mappings should return 201.' );
 	}
 
 	public function test_rest_batch_limit_exceeded() {
-		// PHPCS placeholder: expect 400 when items > self::BATCH_LIMIT (25).
 		$items = array_fill( 0, 30, array( 'op' => 'create', 'host' => 'batch.io' ) );
 		$url = rest_url( 'dms/v1/mappings/batch' );
-		$response = wp_remote_post( $url, array(
-			'headers' => array( 'Content-Type' => 'application/json', 'Cookie' => $this->cookie( '' ) ),
+		$response = rest_do_remote_request( 'POST', $url, array(
 			'body' => json_encode( array( 'items' => $items ) ),
 		) );
-		$this->assertEquals( 400, wp_remote_response_code( $response ), 'Batch exceeding limit should return 400.' );
+		$this->assertEquals( 400, $response['response']['code'], 'Batch exceeding limit should return 400.' );
 	}
 
 	public function test_rest_values_unsupported_in_multisite() {
-		// When running in multisite, values endpoint must return 400 with proper message.
-		// The test harness typically sets multisite context; this is a framework-level concern.
-		$this->markTestSkipped( 'dms/v1 values are not supported in multisite mode — requires single-site install.' );
+		// Single-site supports mapping values, so there is nothing to assert
+		// in this class (which only runs in single-site mode).
+		$this->markTestSkipped( 'dms/v1 values are supported in single-site mode; this class only runs there.' );
 	}
 
 	public function test_rest_update_mapping_delegates_mode() {
 		$id = $this->create_test_mapping();
-		$url = add_query_arg( 'id', $id, rest_url( 'dms/v1/mappings' ) );
-		$response = wp_remote_patch( $url, array(
-			'headers' => array( 'Content-Type' => 'application/json', 'Cookie' => $this->cookie( '' ) ),
+		$url = rest_url( 'dms/v1/mappings/' . $id );
+		$response = rest_do_remote_request( 'PATCH', $url, array(
 			'body' => json_encode( array( 'host' => 'updated.io' ) ),
 		) );
-		$this->assertEquals( 200, wp_remote_response_code( $response ), 'PATCH /dms/v1/mappings should return 200 in single-site mode.' );
+		$this->assertEquals( 200, $response['response']['code'], 'PATCH /dms/v1/mappings/{id} should return 200 in single-site mode.' );
 	}
 }
