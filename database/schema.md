@@ -39,7 +39,7 @@ Tables created by `DMS_DB_Tables::create_tables()` (`includes/core/class-db-tabl
 - `blog_id` bigint(20) unsigned DEFAULT NULL
 - `user_id` bigint(20) unsigned DEFAULT NULL
 - `domain` varchar(255) DEFAULT NULL
-- `action` varchar(64) NOT NULL (mapping_create | mapping_update | mapping_delete | mapping_enable | mapping_disable | mapping_set_primary | verify_request | verify_success | verify_failure | cert_issue_request | cert_renew_request | cert_renew_success | cert_renew_failure | audit_purged | dms.mapping.create | dms.mapping.update | dms.mapping.delete)
+- `action` varchar(64) NOT NULL (dms.mapping.create | dms.mapping.update | dms.mapping.delete | dms.mapping.enable | dms.mapping.disable | dms.mapping.remove | dms.mapping.primary | dms.mapping.per_domain_update | dms.verification.requested | dms.verification.completed | dms.verification.failed | dms.audit.purged | dms.log.rotation)
 - `context` text DEFAULT NULL (JSON string of relevant state)
 - `correlation_id` varchar(36) DEFAULT NULL (UUID v4 joining the rows of one request/operation; added in migration 5)
 - `created_at` datetime DEFAULT CURRENT_TIMESTAMP
@@ -75,5 +75,6 @@ Tables created by `DMS_DB_Tables::create_tables()` (`includes/core/class-db-tabl
 ## Schema rules
 - All tables use `$wpdb->base_prefix` (multisite-aware).
 - `DMS_TABLE_VERIFICATIONS`, `DMS_TABLE_SSL`, `DMS_TABLE_LOGS`, `DMS_TABLE_MAPPINGS`, `DMS_TABLE_VALUES` constants define table names.
+- Every `dm_audit_log.action` value is namespaced `dms.<area>.<verb>`, the convention documented on `DMS_Logging::log()`. Rows written before 1.2.0 may carry the older un-prefixed keys (`mapping.enable`, `mapping.primary`, `verification.completed`, ...) that were renamed for consistency; the log is append-only, so existing rows were not rewritten.
 - The schema version is tracked independently of the release version: `version_compare( get_site_option('dm_db_version'), DMS_DB_VERSION )` gates `dbDelta()` runs; `dm_version` remains the plugin-version marker.
 - Uninstall (`uninstall.php`) drops tables and deletes `dm_*` metadata from `wp_sitemeta`.

@@ -1,7 +1,7 @@
 === Smart Domain Mapping System ===
 Contributors: CITGROUP
 Tags: multisite, domain mapping, ssl, dns, single-site, rewrite, cli
-Requires at least: 6.4
+Requires at least: 6.6
 Requires PHP: 8.1
 Tested up to: 6.6
 Stable tag: 1.2.0
@@ -110,9 +110,15 @@ Rewrite rules support regex/wildcard with redirect or internal rewrite.
 Query string rules: add/remove/replace/set. Priority ordering prevents conflicts.
 
 = Alias / Subdomain auth? =
-Opt-in via filters:
-* `dms_alias_auth_enabled` — cross-domain session sync for alias domains
-* `dms_subdomain_auth_enabled` — shared cookies across subdomains
+* `dms_subdomain_auth_enabled` — opt-in: share one auth cookie across a shared
+  parent domain (e.g. `.example.com`).
+* `dms_alias_auth_enabled` — **retired in 1.2.0**; flipping it now only raises a
+  `_doing_it_wrong()` notice. It never worked (a browser rejects any cookie whose
+  `Domain` is not a suffix of the host serving the response), and its accept path
+  was deleted rather than repaired because making the signed payload
+  self-consistent would have created a session-forgery primitive. To stay signed
+  in across related domains, use `dms_subdomain_auth_enabled` with a shared parent
+  domain.
 
 = WP-CLI --dry-run? =
 All mapping commands support `--dry-run` to preview changes safely:
@@ -187,32 +193,21 @@ a secret scan on every push.
 
 = 1.2.0 =
 * **Feature:** Single-site domain mapping mode alongside existing Multisite core (dual-mode architecture).
-* **Feature:** Per-domain customization — custom head/body code (XSS-safe), favicon, menu, language, 404 handling.
+* **Feature:** Per-domain customization — custom head/body code (XSS-safe), favicon, menu, language, 404 handling. Single-site only: the multisite engine stays authoritative for its own mappings.
 * **Feature:** Global mapping scopes — archives, categories, parent pages, WooCommerce products via Mapping Values.
-* **Feature:** URL rewriting & query string rules — regex/wildcard path rewrites, query string add/remove/replace/set.
-* **Feature:** Alias & subdomain authentication — cross-domain session sync, shared subdomain cookies.
-* **Feature:** Modern REST API `dms/v1` — mappings, mapping values, batch, pagination, per-domain fields.
+* **Feature:** URL rewriting & query string rules — regex/wildcard path rewrites, query string add/remove/replace/set, priority sorting, preloading on save, incremental cache invalidation.
+* **Feature:** Subdomain authentication — one shared auth cookie across a parent domain, opt-in via `dms_subdomain_auth_enabled`.
+* **Feature:** Modern REST API — the `dms/v1` namespace (mappings, mapping values, batch, pagination, per-domain fields) alongside `domain-mapping/v1`.
 * **Feature:** Granular capabilities — `manage_dms_mappings`, `manage_dms_settings`, `manage_dms_rewrites`, `view_dms_logs`; filterable via `dms_capabilities`.
-* **Feature:** Integrations — Yoast SEO, W3TC/WP Rocket/WP Super Cache, Polylang/WPML, Borlabs Cookie, MDM (all runtime-guarded).
-* **Feature:** Rewrite engine — `mu-plugins` drop-in, path rewrites (regex/wildcard), query string add/remove/replace/set, priority sorting, cache invalidation.
-* **Feature:** CLI `--dry-run` flag for all mapping commands.
-* **Feature:** Pagination on REST endpoints (`page`, `per_page`, `Link` headers).
-* **Feature:** Composite DB indexes + denormalized `host` in `dm_mapping_values` (Migration 4).
-* **Feature:** Rewrite engine preloading on mapping save, incremental cache invalidation.
+* **Feature:** Integrations — Yoast SEO, W3TC/WP Rocket/WP Super Cache, Polylang/WPML, Borlabs Cookie, MDM (all runtime-guarded, each disableable via `dms_integration_{slug}_enabled`).
+* **Feature:** CLI `--dry-run` flag for all mapping commands (`add`, `enable`, `disable`, `remove`, `set-primary`).
 * **Feature:** Structured audit logging — correlation IDs, JSON context, log rotation by age/size, export.
-* **Feature:** Granular capabilities — `manage_dms_mappings`, `manage_dms_settings`, `manage_dms_rewrites`, `view_dms_logs`; filterable via `dms_capabilities`.
-* **Feature:** Integrations — Yoast SEO, W3TC/WP Rocket/WP Super Cache, Polylang/WPML, Borlabs Cookie, MDM (all runtime-guarded).
+* **Enhancement:** Denormalized `host` column in `dm_mapping_values` with backfill, plus composite indexes `(host, active)` and `(host, verified)` on `dm_mappings` (Migration 4).
 * **Enhancement:** WordPress 6.6 minimum; PHP 8.1 minimum.
-* **Enhancement:** REST API pagination with `Link` headers (RFC 5988).
-* **Enhancement:** CLI `--dry-run` flag for all mapping commands.
-* **Enhancement:** PHPStan Level 5 + Psalm Level 3 with WordPress extensions in CI.
-* **Enhancement:** Denormalized `host` column in `dm_mapping_values` for direct lookups.
-* **Enhancement:** Composite indexes `(host, active)`, `(host, verified)` on `dm_mappings`.
-* **Enhancement:** Denormalized `host` in `dm_mapping_values` with backfill.
-* **Enhancement:** Rewrite engine preloading on mapping save/update; cache invalidation on delete.
-* **Enhancement:** CLI `--dry-run` flag for all mapping commands (add, enable, disable, remove, set-primary).
-* **Docs:** Complete API reference, User Guide, Developer Guide, Migration Guide, Hooks Reference, CLI Reference.
-* **Testing:** PHPStan Level 5 + Psalm Level 3 in CI; `composer static-analysis` + `composer audit`.
+* **Removal:** Alias auth (`dms_alias_auth_enabled`). Its cross-domain cookie could never be stored by a browser, and repairing the signed payload would have turned the reader into a session-forgery primitive, so the accept path was deleted rather than patched. Use `dms_subdomain_auth_enabled` with a shared parent domain.
+* **Fixed:** Alias-domain redirects no longer loop (structural cycle detection) or fall back to `wp-admin` on an off-site target; per-domain REST fields refuse multisite instead of writing the single-site table; the `dms.` audit-key namespace is consistent at every call site (rows written before this release keep their older keys); and log rotation now honours the configured retention window, which previously only the manual purge respected.
+* **Docs:** Hooks reference for filters and lifecycle actions (see `README.md`).
+* **Testing:** PHPStan Level 5 + Psalm Level 3 with WordPress extensions in CI; `composer static-analysis` + `composer audit`.
 * **Packaging:** Full GPL-2.0 license text, generated `.pot` translation template.
 
 = 1.1.1 =

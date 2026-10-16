@@ -1,5 +1,11 @@
 === Smart Domain Mapping System ===
 
+= 1.2.0 =
+* Requires WordPress 6.6+; PHP 8.1+.
+* Security: alias-domain redirects no longer loop between two mappings or fall back to wp-admin on an off-site target (structural cycle detection); per-domain REST field endpoints refuse multisite instead of writing the single-site mapping table; alias auth removed — it never worked, and repairing its signed payload would have created a session-forgery primitive.
+* Fixed: log rotation now honours the configured audit-retention setting instead of always using the 180-day default; audit action keys standardised on the `dms.` prefix (rows written before this release keep their older keys).
+* Docs: hooks reference and developer guide corrected to the hooks the plugin actually fires; database schema notes the action-key convention; minimum-version statements aligned to WordPress 6.6.
+
 = 1.2.0-rc1 =
 * Feature: add single-site domain-mapping mode alongside existing Multisite core (dual-mode architecture).
 * New tables: `dm_mappings` (host/path keyed) and `dm_mapping_values` (global object scopes).
