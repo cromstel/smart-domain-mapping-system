@@ -1,13 +1,13 @@
 # Contributing
 
 Thanks for your interest in Smart Domain Mapping System. This project is a
-WordPress **multisite** plugin (WordPress 6.4+, PHP 8.1+) — read
+WordPress **multisite** plugin (WordPress 6.6+, PHP 8.1+) — read
 [`docs/API.md`](docs/API.md) before changing the REST API or WP-CLI
 surface.
 
 ## Ground rules
 
-- Every change must keep the plugin working on **PHP 8.1+** and **WordPress 6.4+**.
+- Every change must keep the plugin working on **PHP 8.1+** and **WordPress 6.6+**.
 - The plugin source lives at the repository root; documentation lives in `docs/`
   and the changelog lives in `readme.txt`.
 - Security first: capability checks, nonces and sanitization/escaping on every

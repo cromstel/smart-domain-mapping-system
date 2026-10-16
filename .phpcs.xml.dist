@@ -44,7 +44,7 @@
 	</rule>
 
 	<!-- Minimum supported WordPress version for deprecation checks. -->
-	<config name="minimum_supported_wp_version" value="6.4"/>
+	<config name="minimum_supported_wp_version" value="6.6"/>
 
 	<!-- PHP compatibility: never flag newer-than-target, only removed/broken syntax. -->
 	<rule ref="PHPCompatibilityWP"/>

@@ -15,7 +15,7 @@
  * Plugin Name:       Smart Domain Mapping System
  * Description:       Multisite custom domain mapping using wp_sitemeta with DNS verification, SSL lifecycle tracking, and audit logging.
  * Version:           1.2.0
- * Requires at least: 6.4
+ * Requires at least: 6.6
  * Requires PHP:      8.1
  * Author:            CITGROUP
  * Author URI:        https://cromstelit.com

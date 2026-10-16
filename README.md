@@ -10,7 +10,7 @@ Multisite custom domain mapping for WordPress. Mappings live in `wp_sitemeta`
 (Mercator-style), resolve through core's `wp_blogs.domain`, and are backed by DNS
 verification, SSL certificate lifecycle tracking, an audit log and a REST API.
 
-- **Requires:** WordPress 6.4+ (multisite) and PHP 8.1+
+- **Requires:** WordPress 6.6+ (multisite) and PHP 8.1+
 - **No `sunrise.php`**, no drop-ins, no early bootstrap hacks
 - **Network Admin UI**, **WP-CLI** (`wp dm`) and a **REST API** (`domain-mapping/v1`)
 - **Local audit logging only** — no telemetry ever leaves the server

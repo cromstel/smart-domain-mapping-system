@@ -1,6 +1,6 @@
 # Security & Anti-Pattern Audit — Smart Domain Mapping System
 
-Target: WordPress 6.4+ / PHP 8.1+, mappings in `wp_sitemeta` (Mercator style).
+Target: WordPress 6.6+ / PHP 8.1+, mappings in `wp_sitemeta` (Mercator style).
 
 ## Security Triad (skill rules)
 
