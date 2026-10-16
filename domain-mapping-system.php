@@ -203,31 +203,40 @@ function dms_current_user_can( $cap ) {
 
 /**
  * Phase 2D: Installs the rewrite engine mu-plugins drop-in.
+ *
+ * Guarded with function_exists() because the drop-in itself declares a
+ * same-named fallback and is loaded (from mu-plugins) before this file.
  */
-function dms_rewrite_install() {
-	$mu_dir  = WP_CONTENT_DIR . '/mu-plugins';
-	$mu_file = $mu_dir . '/dms-rewrite-loader.php';
+if ( ! function_exists( 'dms_rewrite_install' ) ) {
+	function dms_rewrite_install() {
+		$mu_dir  = WP_CONTENT_DIR . '/mu-plugins';
+		$mu_file = $mu_dir . '/dms-rewrite-loader.php';
 
-	// Create mu-plugins directory if needed.
-	if ( ! is_dir( $mu_dir ) ) {
-		wp_mkdir_p( $mu_dir );
-	}
+		// Create mu-plugins directory if needed.
+		if ( ! is_dir( $mu_dir ) ) {
+			wp_mkdir_p( $mu_dir );
+		}
 
-	$source = DMS_PLUGIN_DIR . '/includes/rewrite/class-rewrite-loader.php';
-	if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
-		copy( $source, $mu_file );
+		$source = DMS_PLUGIN_DIR . '/includes/rewrite/class-rewrite-loader.php';
+		if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
+			copy( $source, $mu_file );
+		}
 	}
 }
 
 /**
  * Phase 2D: Removes the rewrite engine mu-plugins drop-in.
+ *
+ * Guarded with function_exists() — see dms_rewrite_install() above.
  */
-function dms_rewrite_uninstall() {
-	$mu_file = WP_CONTENT_DIR . '/mu-plugins/dms-rewrite-loader.php';
-	if ( file_exists( $mu_file ) ) {
-		@unlink( $mu_file );
+if ( ! function_exists( 'dms_rewrite_uninstall' ) ) {
+	function dms_rewrite_uninstall() {
+		$mu_file = WP_CONTENT_DIR . '/mu-plugins/dms-rewrite-loader.php';
+		if ( file_exists( $mu_file ) ) {
+			wp_delete_file( $mu_file );
+		}
+		flush_rewrite_rules();
 	}
-	flush_rewrite_rules();
 }
 
 /**

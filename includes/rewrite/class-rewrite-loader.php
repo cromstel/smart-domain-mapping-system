@@ -177,36 +177,48 @@ function dms_rewrite_clear_cache( $mapping_id, $host ) {
 	DMS_Rewrite_Engine::clear_cache( $host );
 }
 
-/**
- * Uninstall cleanup: remove mu-plugins drop-in file.
- * Called by the plugin's uninstall hook.
+/*
+ * The activation/uninstall helpers below are owned by the main plugin file
+ * (domain-mapping-system.php). This drop-in is copied into mu-plugins, which
+ * WordPress loads BEFORE regular plugins, so declaring these names
+ * unconditionally here would make the plugin file's own declarations fatal
+ * ("Cannot redeclare ..."). Guard with function_exists() so either load order
+ * is safe.
  */
-function dms_rewrite_uninstall() {
-	$mu_file = WP_CONTENT_DIR . '/mu-plugins/dms-rewrite-loader.php';
-	if ( file_exists( $mu_file ) ) {
-		@unlink( $mu_file );
+if ( ! function_exists( 'dms_rewrite_uninstall' ) ) {
+	/**
+	 * Uninstall cleanup: remove mu-plugins drop-in file.
+	 * Called by the plugin's uninstall hook.
+	 */
+	function dms_rewrite_uninstall() {
+		$mu_file = WP_CONTENT_DIR . '/mu-plugins/dms-rewrite-loader.php';
+		if ( file_exists( $mu_file ) ) {
+			wp_delete_file( $mu_file );
+		}
+		// Flush rewrite rules.
+		flush_rewrite_rules();
 	}
-	// Flush rewrite rules.
-	flush_rewrite_rules();
 }
 
-/**
- * Activation: install mu-plugins drop-in.
- * Called by the plugin's activation hook.
- */
-function dms_rewrite_install() {
-	$mu_dir  = WP_CONTENT_DIR . '/mu-plugins';
-	$mu_file = $mu_dir . '/dms-rewrite-loader.php';
+if ( ! function_exists( 'dms_rewrite_install' ) ) {
+	/**
+	 * Activation: install mu-plugins drop-in.
+	 * Called by the plugin's activation hook.
+	 */
+	function dms_rewrite_install() {
+		$mu_dir  = WP_CONTENT_DIR . '/mu-plugins';
+		$mu_file = $mu_dir . '/dms-rewrite-loader.php';
 
-	// Create mu-plugins directory if needed.
-	if ( ! is_dir( $mu_dir ) ) {
-		wp_mkdir_p( $mu_dir );
-	}
+		// Create mu-plugins directory if needed.
+		if ( ! is_dir( $mu_dir ) ) {
+			wp_mkdir_p( $mu_dir );
+		}
 
-	// Copy this file to mu-plugins.
-	$source = __FILE__;
-	if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
-		copy( $source, $mu_file );
+		// Copy this file to mu-plugins.
+		$source = __FILE__;
+		if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
+			copy( $source, $mu_file );
+		}
 	}
 }
 
