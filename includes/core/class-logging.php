@@ -14,7 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class DMS_Logging {
 
-	// Default log retention (days) - filterable.
+	// Fallback log retention (days) when the Settings screen has no value.
+	// The effective window is filterable via dms_audit_retention_days.
 	const DEFAULT_RETENTION_DAYS = 180;
 
 	// Maximum log entries before rotation triggers.
@@ -153,8 +154,26 @@ final class DMS_Logging {
 	 * @return int Retention in days (0 = unlimited).
 	 */
 	private function get_retention_days(): int {
-		$retention = get_site_option( 'dm_audit_retention_days', self::DEFAULT_RETENTION_DAYS );
-		return max( 0, min( 3650, (int) $retention ) );
+		$options = get_site_option( 'dm_options', array() );
+
+		// The Settings screen stores retention inside the dm_options array,
+		// under the same key the health-check purge reads. An earlier build
+		// looked for a standalone option instead, so fall back to it only when
+		// dm_options holds nothing - the Settings screen always wins.
+		if ( is_array( $options ) && isset( $options['audit_retention_days'] ) && '' !== $options['audit_retention_days'] ) {
+			$retention = (int) $options['audit_retention_days'];
+		} else {
+			$retention = (int) get_site_option( 'dm_audit_retention_days', self::DEFAULT_RETENTION_DAYS );
+		}
+
+		/**
+		 * Filters the audit-log retention window, in days.
+		 *
+		 * @param int $retention Days of history to keep (0 = unlimited).
+		 */
+		$retention = (int) apply_filters( 'dms_audit_retention_days', $retention );
+
+		return max( 0, min( 3650, $retention ) );
 	}
 
 	/**
